@@ -127,6 +127,7 @@ function AllStock({ stock, onSwitchChange }) {
         });
 
         setStocks(sorted);
+        setCurrentPage(1);
     }, [sortSelected]);
 
 

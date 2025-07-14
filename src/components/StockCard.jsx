@@ -36,7 +36,7 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite }) {
 
     return (
         <div
-            className={`bg-[#3E4355] rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border-2 ${status === 'Buy'
+            className={`bg-[#3E4355] hover:bg-[#5D6275] rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border-2 ${status === 'Buy'
                 ? 'border-[#41DC8E]'
                 : status === 'Hold'
                     ? 'border-[#E0B469]'
