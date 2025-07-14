@@ -57,7 +57,7 @@ STOCKSIGNAL/
 
 - **Frontend:** React 18, Vite 4
 - **Styling:** TailwindCSS 3
-- **Charts:** LightweightChart (or whichever is used)
+- **Charts:** LightweightChart
 
 ## 🤝 Contributing
 
