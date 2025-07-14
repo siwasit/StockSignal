@@ -1,22 +1,71 @@
-/**
- * # Project Description
- * 
- * ## What is the project?
- * This project is designed to label stock signals (Buy, Hold, Sell) by analyzing stock indicators and performing backtesting to evaluate the effectiveness of the generated signals.
- * 
- * ## How is this project?
- * The project is implemented using **React**, **Vite.js**, and **TailwindCSS**, following best practices for modularity, scalability, and maintainability. It features a component-based architecture, responsive design, and includes comprehensive error handling and unit tests.
- * 
- * ## How to run this project
- * 1. Clone the repository:  
- *    `git clone <repository-url>`
- * 2. Navigate to the project directory:  
- *    `cd <project-directory>`
- * 3. Install dependencies:  
- *    `npm install`
- * 4. Start the application:  
- *    `npm run dev`
- * 5. Access the application at [http://localhost:3006](http://localhost:3006).
- * 
- * > **Note:** Replace placeholders (e.g., `<repository-url>`, `<project-directory>`) with actual values relevant to your project.
- */
+# Stock Signal Labeling & Backtesting System
+
+[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-4.4.0-yellow.svg)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.3.0-06B6D4.svg)](https://tailwindcss.com/)
+
+## 📌 Overview
+
+A sophisticated web application for analyzing stock indicators, generating trading signals (Buy/Hold/Sell), and performing comprehensive backtesting to evaluate strategy effectiveness.
+
+![Dashboard Screenshot](https://via.placeholder.com/800x500?text=Stock+Signal+Analyzer+Dashboard)
+
+## ✨ Features
+
+- **Signal Generation:** Automatically labels stock signals based on technical indicators
+- **Interactive Visualization:** Dynamic charts for technical analysis
+- **Modular Architecture:** Component-based structure for easy maintenance
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v16 or higher)
+- npm (v8 or higher)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/stock-signal-analyzer.git
+
+# Navigate to project directory
+cd stock-signal-analyzer
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The application will be available at [http://localhost:3006](http://localhost:3006).
+
+## 🛠️ Project Structure
+
+```
+stock-signal-analyzer/
+├── src/
+│   ├── components/    # Reusable UI components
+│   ├── assets/        # Static assets (images, fonts, etc.)
+│   ├── pages/         # Application pages
+│   ├── utils/         # Utility functions
+├── public/            # Public assets
+└── vite.config.js     # Vite configuration
+```
+
+## 📈 Technical Stack
+
+- **Frontend:** React 18, Vite 4
+- **Styling:** TailwindCSS 3
+- **Charts:** LightweightChart (or whichever is used)
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
