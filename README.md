@@ -48,8 +48,7 @@ STOCKSIGNAL/
 ├── src/
 │   ├── components/    # Reusable UI components
 │   ├── assets/        # Static assets (images, fonts, etc.)
-│   ├── pages/         # Application pages
-│   ├── utils/         # Utility functions
+│   └── pages/         # Application pages
 ├── public/            # Public assets
 └── vite.config.js     # Vite configuration
 ```
