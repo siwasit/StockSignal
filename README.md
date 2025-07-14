@@ -8,7 +8,7 @@
 
 A sophisticated web application for analyzing stock indicators, generating trading signals (Buy/Hold/Sell), and performing comprehensive backtesting to evaluate strategy effectiveness.
 
-![Dashboard Screenshot](public/images/DashBoard.png.png)
+![Dashboard Screenshot](public/images/DashBoard.png)
 
 ## ✨ Features
 
