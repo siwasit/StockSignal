@@ -44,7 +44,7 @@ The application will be available at [http://localhost:3006](http://localhost:30
 ## 🛠️ Project Structure
 
 ```
-stock-signal-analyzer/
+STOCKSIGNAL/
 ├── src/
 │   ├── components/    # Reusable UI components
 │   ├── assets/        # Static assets (images, fonts, etc.)
