@@ -8,7 +8,7 @@
 
 A sophisticated web application for analyzing stock indicators, generating trading signals (Buy/Hold/Sell), and performing comprehensive backtesting to evaluate strategy effectiveness.
 
-![Dashboard Screenshot](https://via.placeholder.com/800x500?text=Stock+Signal+Analyzer+Dashboard)
+![Dashboard Screenshot](public/images/DashBoard.png.png)
 
 ## ✨ Features
 
