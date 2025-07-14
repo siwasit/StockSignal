@@ -1,0 +1,241 @@
+import React, { useState, useRef, useEffect } from 'react'
+import StockDetail from './StockDetail';
+import { FunnelIcon } from '@heroicons/react/24/solid';
+import CandlestickIcon from './../assets/CandlestickIcon'
+import StockCard from './StockCard';
+
+function AllStock({ stock, onSwitchChange }) {
+    const stockOptions = [
+        { id: 1, name: 'หุ้นทั้งหมด' },
+        { id: 2, name: 'หุ้นยอดนิยม' },
+    ];
+
+    const companyNames = [
+        'TechNova',
+        'GreenLeaf',
+        'Skyline Corp',
+        'Quantum Solutions',
+        'BlueWave',
+        'Solaris Ltd',
+        'NextGen Tech',
+        'Apex Industries',
+        'Everest Systems',
+        'FusionWorks',
+        'Nimbus',
+        'Luna Innovations',
+        'Atlas Group',
+        'Vertex Inc',
+        'Pinnacle',
+        'Echo Enterprises',
+        'Zenith',
+        'NovaCore',
+        'Horizon Dynamics',
+        'PulseTech',
+    ];
+
+    const sortOptions = [
+        { id: 1, name: 'ชื่อ' },
+        { id: 2, name: 'สถานะ' },
+        { id: 3, name: 'ล่าสุด' },
+        { id: 4, name: 'watchlist' },
+    ];
+
+    function getRandomDate(start, end) {
+        const timestamp = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+        return new Date(timestamp);
+    }
+
+    const mockStockData = Array.from({ length: 18 }).map((_, index) => {
+        const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
+        const companyName = companyNames[Math.floor(Math.random() * companyNames.length)];
+
+        return {
+            stockSymbol: `STOCK ${String.fromCharCode(65 + index)}`,
+            companyName, // เพิ่ม companyName เข้าไป
+            status: ['Buy', 'Sell', 'Hold'][index % 3],
+            reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][index % 3],
+            timeStamp: randomDate.toISOString(),
+            isFavorite: index % 4 === 0,
+        };
+    });
+
+    const [switchState, setSwitchState] = useState(onSwitchChange);
+    const [stockDetail, setStockDetail] = useState(stock);
+
+    const [open, setOpen] = useState(false);
+    const [sortOpen, setSortOpen] = useState(false);
+
+    const [selected, setSelected] = useState(stockOptions[0]);
+    const [stocks, setStocks] = useState(mockStockData);
+    const [sortSelected, setSortSelected] = useState(sortOptions[0]);
+    const ref = useRef();
+    const sortRef = useRef();
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (ref.current && !ref.current.contains(event.target)) {
+                setOpen(false);
+            }
+            if (sortRef.current && !sortRef.current.contains(event.target)) {
+                setSortOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const sorted = [...mockStockData].sort((a, b) => {
+            switch (sortSelected.id) {
+                case 1: // ชื่อ
+                    return a.stockSymbol.localeCompare(b.stockSymbol);
+                case 2: // สถานะ
+                    return a.status.localeCompare(b.status);
+                case 3: // ล่าสุด
+                    return new Date(b.timeStamp) - new Date(a.timeStamp);
+                case 4: // watchlist
+                    if (a.isFavorite === b.isFavorite) return 0;
+                    if (a.isFavorite) return -1;
+                    return 1;
+                default:
+                    return 0;
+            }
+        });
+
+        setStocks(sorted);
+    }, [sortSelected]);
+
+
+    return (
+        <div className='p-4'>
+            {switchState ? (
+                <div className='flex relative flex-col min-h-screen'>
+                    <div className="flex items-center gap-2">
+                        <div className="text-3xl text-white pb-2 font-bold">หุ้น</div>
+                        <CandlestickIcon />
+                    </div>
+                    <div className="flex items-center self-end gap-4 ">
+                        {/* หุ้นยอดนิยม */}
+                        <div className="relative w-60" ref={ref}>
+                            <div
+                                className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
+                                onClick={() => setOpen(!open)}
+                            >
+                                <span>{selected.name}</span>
+                                <svg
+                                    className={`w-5 h-5 ml-2 transition-transform duration-200 ${open ? 'rotate-180' : ''
+                                        }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </div>
+
+                            <div
+                                className={`absolute z-10  mt-1 w-full bg-[#5D6275] rounded shadow-lg max-h-60 overflow-auto transition-all duration-200 origin-top ${open ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+                                    }`}
+                            >
+                                {stockOptions.map((option) => (
+                                    <div
+                                        key={option.id}
+                                        className={`px-4 py-2 cursor-pointer text-white hover:bg-[#8C8F99]/50 ${selected.id === option.id ? 'bg-[#8C8F99] font-semibold' : ''
+                                            }`}
+                                        onClick={() => {
+                                            setSelected(option);
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        {option.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="relative w-60" ref={sortRef}>
+                            <div
+                                className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
+                                onClick={() => setSortOpen(!sortOpen)}
+                            >
+                                <span>{sortSelected.name}</span>
+                                <svg
+                                    className={`w-5 h-5 ml-2 transition-transform duration-200 ${sortOpen ? 'rotate-180' : ''
+                                        }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </div>
+
+                            <div
+                                className={`absolute z-10  mt-1 w-full bg-[#5D6275] rounded shadow-lg max-h-60 overflow-auto transition-all duration-200 origin-top ${sortOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+                                    }`}
+                            >
+                                {sortOptions.map((option) => (
+                                    <div
+                                        key={option.id}
+                                        className={`px-4 py-2 cursor-pointer text-white hover:bg-[#8C8F99]/50 ${sortSelected.id === option.id ? 'bg-[#8C8F99] font-semibold' : ''
+                                            }`}
+                                        onClick={() => {
+                                            setSortSelected(option);
+                                            setSortOpen(false);
+                                        }}
+                                    >
+                                        {option.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* ไอคอนกรอง */}
+                        <div className="p-2 bg-[#5D6275] rounded hover:bg-[#6B708A] transition-colors cursor-pointer flex items-center h-10">
+                            <FunnelIcon className="w-6 h-6 text-white" />
+                        </div>
+
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-4">
+                        {stocks.map((stock, index) => (
+                            <div key={index}>
+                                <div key={index} onClick={() => {
+                                    setSwitchState(!switchState);
+                                    setStockDetail(stock);
+                                }}
+                                    className='cursor-pointer animate__animated animate__fadeInUp'>
+                                    <StockCard
+                                        stockSymbol={stock.stockSymbol}
+                                        status={stock.status}
+                                        reason={stock.reason}
+                                        timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: true,
+                                        })}`}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                </div>
+            ) : (
+                <StockDetail stock={stockDetail} />
+            )
+            }
+        </div >
+    )
+}
+
+export default AllStock
