@@ -3,6 +3,7 @@ import StockDetail from './StockDetail';
 import { FunnelIcon } from '@heroicons/react/24/solid';
 import CandlestickIcon from './../assets/CandlestickIcon'
 import StockCard from './StockCard';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 function AllStock({ stock, onSwitchChange }) {
     const stockOptions = [
@@ -45,7 +46,7 @@ function AllStock({ stock, onSwitchChange }) {
         return new Date(timestamp);
     }
 
-    const mockStockData = Array.from({ length: 18 }).map((_, index) => {
+    const mockStockData = Array.from({ length: 90 }).map((_, index) => {
         const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
         const companyName = companyNames[Math.floor(Math.random() * companyNames.length)];
 
@@ -71,6 +72,29 @@ function AllStock({ stock, onSwitchChange }) {
     const ref = useRef();
     const sortRef = useRef();
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 18;
+    const totalPages = Math.ceil(stocks.length / itemsPerPage);
+    const handlePrev = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePageClick = (page) => {
+        setCurrentPage(page);
+    };
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentStocks = stocks.slice(startIndex, endIndex);
+
     useEffect(() => {
         function handleClickOutside(event) {
             if (ref.current && !ref.current.contains(event.target)) {
@@ -85,7 +109,7 @@ function AllStock({ stock, onSwitchChange }) {
     }, []);
 
     useEffect(() => {
-        const sorted = [...mockStockData].sort((a, b) => {
+        const sorted = [...stocks].sort((a, b) => {
             switch (sortSelected.id) {
                 case 1: // ชื่อ
                     return a.stockSymbol.localeCompare(b.stockSymbol);
@@ -204,13 +228,15 @@ function AllStock({ stock, onSwitchChange }) {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-4">
-                        {stocks.map((stock, index) => (
+                        {currentStocks.map((stock, index) => (
                             <div key={index}>
-                                <div key={index} onClick={() => {
-                                    setSwitchState(!switchState);
-                                    setStockDetail(stock);
-                                }}
-                                    className='cursor-pointer animate__animated animate__fadeInUp'>
+                                <div
+                                    onClick={() => {
+                                        setSwitchState(!switchState);
+                                        setStockDetail(stock);
+                                    }}
+                                    className="cursor-pointer animate__animated animate__fadeInUp"
+                                >
                                     <StockCard
                                         stockSymbol={stock.stockSymbol}
                                         status={stock.status}
@@ -229,6 +255,47 @@ function AllStock({ stock, onSwitchChange }) {
                         ))}
                     </div>
 
+                    <div className="flex justify-center items-center space-x-2 my-4">
+
+                        {/* Prev Button */}
+                        <div
+                            onClick={handlePrev}
+                            className={`flex items-center gap-1 px-3 py-1 rounded text-white w-24 ${currentPage === 1
+                                    ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
+                                    : 'hover:bg-[#6870FA] cursor-pointer'
+                                }`}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            <span>กลับ</span>
+                        </div>
+
+                        {/* Page Buttons */}
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                            <div
+                                key={page}
+                                onClick={() => handlePageClick(page)}
+                                className={`px-3 py-1 rounded text-white cursor-pointer ${currentPage === page
+                                        ? 'bg-[#6870FA]'
+                                        : 'hover:bg-[#6870FA]/50'
+                                    }`}
+                            >
+                                {page}
+                            </div>
+                        ))}
+
+                        {/* Next Button */}
+                        <div
+                            onClick={handleNext}
+                            className={`flex items-center gap-1 px-3 py-1 rounded text-white w-24 ${currentPage === totalPages
+                                    ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
+                                    : 'hover:bg-[#6870FA] cursor-pointer'
+                                }`}
+                        >
+                            <span>ต่อไป</span>
+                            <ChevronRight className="w-4 h-4" />
+                        </div>
+
+                    </div>
                 </div>
             ) : (
                 <StockDetail stock={stockDetail} />
