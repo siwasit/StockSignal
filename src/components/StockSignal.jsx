@@ -99,7 +99,6 @@ function StockSignal({ onSwitchChange, stock }) {
         { id: 1, name: 'ชื่อ' },
         { id: 2, name: 'สถานะ' },
         { id: 3, name: 'ล่าสุด' },
-        { id: 4, name: 'watchlist' },
     ];
 
     const [open, setOpen] = useState(false);
@@ -146,9 +145,6 @@ function StockSignal({ onSwitchChange, stock }) {
                     break;
                 case 3: // timeStamp
                     compareValue = new Date(a.timeStamp) - new Date(b.timeStamp);
-                    break;
-                case 4: // isFavorite (true มาข้างบน)
-                    compareValue = (b.isFavorite === true) - (a.isFavorite === true);
                     break;
                 default:
                     compareValue = 0;
