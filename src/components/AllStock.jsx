@@ -4,6 +4,8 @@ import { FunnelIcon } from '@heroicons/react/24/solid';
 import CandlestickIcon from './../assets/CandlestickIcon'
 import StockCard from './StockCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, SortAsc, SortDesc } from 'lucide-react';
+
 
 function AllStock({ stock, onSwitchChange }) {
     const stockOptions = [
@@ -46,12 +48,32 @@ function AllStock({ stock, onSwitchChange }) {
         return new Date(timestamp);
     }
 
-    const mockStockData = Array.from({ length: 90 }).map((_, index) => {
+    const generateRandomSymbol = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+
+        const length = Math.floor(Math.random() * 2) + 2; // 2-3 ตัว
+
+        let symbol = '';
+        for (let i = 0; i < length; i++) {
+            symbol += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // สุ่ม 50% ว่าจะต่อท้ายด้วยตัวเลขหรือไม่
+        if (Math.random() < 0.5) {
+            symbol += numbers.charAt(Math.floor(Math.random() * numbers.length));
+        }
+
+        return symbol;
+    };
+
+
+    const mockStockData = Array.from({ length: 90 }, (_, index) => {
         const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
         const companyName = companyNames[Math.floor(Math.random() * companyNames.length)];
 
         return {
-            stockSymbol: `STOCK ${String.fromCharCode(65 + index)}`,
+            stockSymbol: generateRandomSymbol(),
             companyName, // เพิ่ม companyName เข้าไป
             status: ['Buy', 'Sell', 'Hold'][index % 3],
             reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][index % 3],
@@ -69,6 +91,10 @@ function AllStock({ stock, onSwitchChange }) {
     const [selected, setSelected] = useState(stockOptions[0]);
     const [stocks, setStocks] = useState(mockStockData);
     const [sortSelected, setSortSelected] = useState(sortOptions[0]);
+    const [sortDirection, setSortDirection] = useState('asc'); // เริ่มจาก ascending
+    const toggleSort = () => {
+        setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    };
     const ref = useRef();
     const sortRef = useRef();
 
@@ -105,30 +131,50 @@ function AllStock({ stock, onSwitchChange }) {
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
+
+        console.log(mockStockData)
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
         const sorted = [...stocks].sort((a, b) => {
+            let compareValue = 0;
+
             switch (sortSelected.id) {
-                case 1: // ชื่อ
-                    return a.stockSymbol.localeCompare(b.stockSymbol);
-                case 2: // สถานะ
-                    return a.status.localeCompare(b.status);
-                case 3: // ล่าสุด
-                    return new Date(b.timeStamp) - new Date(a.timeStamp);
-                case 4: // watchlist
-                    if (a.isFavorite === b.isFavorite) return 0;
-                    if (a.isFavorite) return -1;
-                    return 1;
+                case 1: // companyName
+                    compareValue = a.companyName.localeCompare(b.companyName);
+                    break;
+                case 2: // status
+                    compareValue = a.status.localeCompare(b.status);
+                    break;
+                case 3: // timeStamp
+                    compareValue = new Date(a.timeStamp) - new Date(b.timeStamp);
+                    break;
+                case 4: // isFavorite (true มาข้างบน)
+                    compareValue = (b.isFavorite === true) - (a.isFavorite === true);
+                    break;
                 default:
-                    return 0;
+                    compareValue = 0;
             }
+
+            return sortDirection === 'asc' ? compareValue : -compareValue;
         });
 
         setStocks(sorted);
         setCurrentPage(1);
-    }, [sortSelected]);
+    }, [sortSelected, sortDirection]);
+
+    // useEffect(() => {
+    //     const sorted = [...stocks].sort((a, b) => {
+    //         if (sortDirection === 'asc') {
+    //             return a.companyName.localeCompare(b.companyName);
+    //         } else {
+    //             return b.companyName.localeCompare(a.companyName);
+    //         }
+    //     });
+    //     setStocks(sorted);
+    //     setCurrentPage(1);
+    // }, [sortDirection]);
 
 
     return (
@@ -222,9 +268,30 @@ function AllStock({ stock, onSwitchChange }) {
                         </div>
 
                         {/* ไอคอนกรอง */}
-                        <div className="p-2 bg-[#5D6275] rounded hover:bg-[#6B708A] transition-colors cursor-pointer flex items-center h-10">
-                            <FunnelIcon className="w-6 h-6 text-white" />
+                        <div
+                            onClick={toggleSort}
+                            className="p-2 bg-[#5D6275] rounded hover:bg-[#6B708A] transition-colors cursor-pointer flex items-center justify-center h-10 w-10"
+                        >
+                            <div
+                                key={sortDirection} // force re-render
+                                className="transition-all duration-300 ease-in-out opacity-0 animate-fadeIn"
+                            >
+                                {sortDirection === 'asc' ? (
+                                    <SortAsc className="w-6 h-6 text-white" />
+                                ) : (
+                                    <SortDesc className="w-6 h-6 text-white" />
+                                )}
+                            </div>
                         </div>
+
+                        {/* <div className="flex gap-4 text-[#6870FA]">
+                            <ArrowUp className="w-6 h-6" />
+                            <ArrowDown className="w-6 h-6" />
+                            <ChevronsUp className="w-6 h-6" />
+                            <ChevronsDown className="w-6 h-6" />
+                            <SortAsc className="w-6 h-6" />
+                            <SortDesc className="w-6 h-6" />
+                        </div> */}
 
                     </div>
 
@@ -242,6 +309,7 @@ function AllStock({ stock, onSwitchChange }) {
                                         stockSymbol={stock.stockSymbol}
                                         status={stock.status}
                                         reason={stock.reason}
+                                        isFavorite={stock.isFavorite}
                                         timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
                                             day: '2-digit',
                                             month: '2-digit',
@@ -261,9 +329,9 @@ function AllStock({ stock, onSwitchChange }) {
                         {/* Prev Button */}
                         <div
                             onClick={handlePrev}
-                            className={`flex items-center gap-1 px-3 py-1 rounded text-white w-24 ${currentPage === 1
-                                    ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
-                                    : 'hover:bg-[#6870FA] cursor-pointer'
+                            className={`flex items-center gap-1 justify-center px-3 py-1 rounded text-white w-24 ${currentPage === 1
+                                ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
+                                : 'hover:bg-[#6870FA] cursor-pointer'
                                 }`}
                         >
                             <ChevronLeft className="w-4 h-4" />
@@ -276,8 +344,8 @@ function AllStock({ stock, onSwitchChange }) {
                                 key={page}
                                 onClick={() => handlePageClick(page)}
                                 className={`px-3 py-1 rounded text-white cursor-pointer ${currentPage === page
-                                        ? 'bg-[#6870FA]'
-                                        : 'hover:bg-[#6870FA]/50'
+                                    ? 'bg-[#6870FA]'
+                                    : 'hover:bg-[#6870FA]/50'
                                     }`}
                             >
                                 {page}
@@ -287,9 +355,9 @@ function AllStock({ stock, onSwitchChange }) {
                         {/* Next Button */}
                         <div
                             onClick={handleNext}
-                            className={`flex items-center gap-1 px-3 py-1 rounded text-white w-24 ${currentPage === totalPages
-                                    ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
-                                    : 'hover:bg-[#6870FA] cursor-pointer'
+                            className={`flex items-center justify-center gap-1 px-3 py-1 rounded text-white w-24 ${currentPage === totalPages
+                                ? 'bg-gray-500 text-gray-500 cursor-not-allowed'
+                                : 'hover:bg-[#6870FA] cursor-pointer'
                                 }`}
                         >
                             <span>ต่อไป</span>

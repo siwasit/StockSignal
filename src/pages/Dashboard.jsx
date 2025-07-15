@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, ChevronUpIcon, ChevronDownIcon, History, Search, LineChart } from 'lucide-react'; // optional icon set
 import { HomeIcon, BellIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/solid';
 import StockSignal from '../components/StockSignal';
 import AllStock from '../components/AllStock';
 import StockDetail from '../components/StockDetail';
+import Setting from '../components/Setting';
 
 function Dashboard() {
-
+    const [isOverflowing, setIsOverflowing] = useState(false);
+    const containerRef = useRef(null);
     const [collapsed, setCollapsed] = useState(false);
     const [activeMenu, setActiveMenu] = useState('dashboard');
     const [switchState, setSwitchState] = useState(true);
@@ -113,10 +115,31 @@ function Dashboard() {
         setShowDropdown(false);
     };
 
+    useEffect(() => {
+        const checkOverflow = () => {
+            if (containerRef.current) {
+                const contentHeight = containerRef.current.scrollHeight;
+                const screenHeight = window.innerHeight;
+                const overflowing = contentHeight > screenHeight;
+
+                setIsOverflowing(overflowing);
+            }
+        };
+
+        checkOverflow();
+        window.addEventListener('resize', checkOverflow);
+        return () => window.removeEventListener('resize', checkOverflow);
+    }, [activeMenu]);
+
+
     const [signalKey, setSignalKey] = useState(0);
 
     return (
-        <div className='bg-[#202431] min-w-[99vw] max-w-[100vw] min-h-screen flex'>
+        <div
+            ref={containerRef}
+            className={`bg-[#202431] min-h-screen ${isOverflowing ? 'min-w-[99vw]' : 'w-[100vw]'
+                }`}
+        >
             {/* Sidebar */}
             <div
                 className={`fixed top-4 left-4 bg-[#2E3343] min-h-[96vh] rounded-xl text-white
@@ -322,6 +345,10 @@ function Dashboard() {
                         onSwitchChange={switchState}
                         stock={stockDetail}
                     />
+                )}
+
+                {activeMenu === 'setting' && (
+                    <Setting />
                 )}
             </div>
         </div>
