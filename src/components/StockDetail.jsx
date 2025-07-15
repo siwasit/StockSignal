@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 
 function StockDetail({ stock }) {
 
-    console.log("StockDetail component rendered with stock:", stock);
+    // console.log("StockDetail component rendered with stock:", stock);
     const [stockDetail, setStockDetail] = useState(stock);
     const [scaleActive, setScaleActive] = useState('1D');
     const options = ['1D', '1W', '1M', '1Y'];

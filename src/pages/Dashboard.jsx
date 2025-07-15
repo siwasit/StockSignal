@@ -5,6 +5,7 @@ import StockSignal from '../components/StockSignal';
 import AllStock from '../components/AllStock';
 import StockDetail from '../components/StockDetail';
 import Setting from '../components/Setting';
+import { useNavigate } from 'react-router-dom';
 
 function Dashboard() {
     const [isOverflowing, setIsOverflowing] = useState(false);
@@ -16,6 +17,7 @@ function Dashboard() {
     const [detailKey, setDetailKey] = useState(0);
 
     const [expanded, setExpanded] = useState(false);
+    const navigate = useNavigate();
 
     const stockList = [
         {
@@ -133,12 +135,16 @@ function Dashboard() {
 
 
     const [signalKey, setSignalKey] = useState(0);
-
+    // min-w-[99vw]' : 'w-[100vw]
     return (
+        // <div
+        //     ref={containerRef}
+        //     className={`bg-[#202431] min-h-screen ${isOverflowing ? 'min-w-[99vw]' : 'w-[100vw]'
+        //         }`}
+        // >
         <div
             ref={containerRef}
-            className={`bg-[#202431] min-h-screen ${isOverflowing ? 'min-w-[99vw]' : 'w-[100vw]'
-                }`}
+            className={`bg-[#202431] min-h-screen min-w-[99vw] max-w-[100vw]`}
         >
             {/* Sidebar */}
             <div
@@ -148,7 +154,7 @@ function Dashboard() {
                 `}
             >
                 <div className={`flex items-start ${collapsed ? 'justify-center' : 'justify-between'} p-4`}>
-                    <span className={`${collapsed && 'hidden'}`}>
+                    <span className={`${collapsed && 'hidden'} cursor-pointer`} onClick={() => navigate('/')} >
                         <img src="/images/logo.png" alt="Logo" className="h-20" />
                     </span>
                     <div onClick={() => setCollapsed(!collapsed)} className="cursor-pointer hover:bg-gray-700 rounded-full transition-colors">
@@ -348,7 +354,11 @@ function Dashboard() {
                 )}
 
                 {activeMenu === 'setting' && (
-                    <Setting />
+                    <Setting
+                        key={signalKey}
+                        onSwitchChange={switchState}
+                        stock={stockDetail}
+                    />
                 )}
             </div>
         </div>
