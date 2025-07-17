@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
-import { calculateEMA, calculateRSI, calculateMACD, calculateVolume } from './../assets/indicators'; // ด้านล่างจะเขียนให้
+import { calculateEMA, calculateRSI, calculateMACD, calculateVolume, calculateOBV } from './../assets/indicators'; // ด้านล่างจะเขียนให้
 import { ExternalLink, ChevronRight } from 'lucide-react';
 import NewsCard from './NewsCard';
 import { motion } from 'framer-motion';
@@ -21,6 +21,7 @@ function StockDetail({ stock }) {
         volume: false,
         ema: false,
         macd: false,
+        obv: false,
     });
 
     const chartContainerRef = useRef();
@@ -56,28 +57,27 @@ function StockDetail({ stock }) {
         let previousClose = 10000; // เริ่มต้นสมมติ portfolio balance ที่ 10,000
 
         for (let i = 0; i < days; i++) {
-            // skip weekends (Saturday=6, Sunday=0)
             const dayOfWeek = currentDate.getDay();
             if (dayOfWeek === 0 || dayOfWeek === 6) {
                 currentDate.setDate(currentDate.getDate() + 1);
                 continue;
             }
 
-            // สุ่มความผันผวนราคา (±2%)
             const open = previousClose;
             const changePercent = (Math.random() * 4 - 2) / 100; // -2% ถึง +2%
             const close = open * (1 + changePercent);
-
-            // high และ low อยู่ในช่วง ±1.5% จาก open และ close
             const high = Math.max(open, close) * (1 + Math.random() * 0.015);
             const low = Math.min(open, close) * (1 - Math.random() * 0.015);
 
+            const volume = Math.floor(Math.random() * 9000 + 1000); // 1,000 ถึง 10,000
+
             data.push({
-                time: currentDate.toISOString().slice(0, 10), // YYYY-MM-DD
+                time: currentDate.toISOString().slice(0, 10),
                 open: parseFloat(open.toFixed(2)),
                 high: parseFloat(high.toFixed(2)),
                 low: parseFloat(low.toFixed(2)),
                 close: parseFloat(close.toFixed(2)),
+                volume,  // เพิ่ม volume ลงในแท่งเทียน
             });
 
             previousClose = close;
@@ -129,6 +129,7 @@ function StockDetail({ stock }) {
     useEffect(() => {
         const data = generateCandlestickData('2023-01-01', 540);
         setSampleData(data);
+        console.log(data)
     }, []);
 
     useEffect(() => {
@@ -193,6 +194,10 @@ function StockDetail({ stock }) {
         }).format;
 
         mainChart.applyOptions({
+            timeScale: {
+                handleScroll: false,  // ปิดเลื่อนกราฟ
+                handleScale: false,   // ปิดซูมกราฟ
+            },
             localization: {
                 priceFormatter: myPriceFormatter,
             },
@@ -236,6 +241,7 @@ function StockDetail({ stock }) {
                 bottom: 0,
             },
         });
+
         mainChart.priceScale('volume').applyOptions({
             scaleMargins: {
                 top: 0.9,
@@ -243,10 +249,33 @@ function StockDetail({ stock }) {
             },
             borderVisible: false,
         });
+
         if (indicators.volume) {
             volumeSeries.setData(calculateVolume(filtered));
         } else {
             volumeSeries.setData([]); // ซ่อน Volume histogram
+        }
+        // OBV Line Series บน Main Chart
+        const obvSeries = mainChart.addSeries(LineSeries, {
+            color: '#A084DC',
+            lineWidth: 2,
+            priceScaleId: 'obv',  // ใช้ Price Scale แยก
+        });
+
+        // ปรับ obv priceScale options (ลบ timeScale ออก)
+        mainChart.priceScale('obv').applyOptions({
+            scaleMargins: {
+                top: 0.85,
+                bottom: 0,
+            },
+            borderVisible: false,
+        });
+
+        // ตั้งค่า OBV data
+        if (indicators.obv) {
+            obvSeries.setData(calculateOBV(filtered));
+        } else {
+            obvSeries.setData([]);  // ซ่อนถ้าไม่เลือก
         }
 
         // --- RSI Chart ---
@@ -387,7 +416,7 @@ function StockDetail({ stock }) {
                             </div>
 
                             <div className="flex flex-wrap gap-4 text-white">
-                                {['rsi', 'volume', 'ema', 'macd'].map((name) => (
+                                {['rsi', 'volume', 'ema', 'macd', 'obv'].map((name) => (
                                     <label key={name} className="flex items-center gap-1 cursor-pointer select-none">
                                         <input
                                             type="checkbox"

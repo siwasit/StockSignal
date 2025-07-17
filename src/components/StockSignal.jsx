@@ -4,83 +4,8 @@ import StockCard from './StockCard';
 import StockDetail from './StockDetail';
 import 'animate.css';
 
-function StockSignal({ onSwitchChange, stock }) {
+function StockSignal({ onSwitchChange, stock, stockList }) {
     // console.log("StockSignal component rendered with stock:", stock);
-
-    const stockList = [
-        {
-            stockSymbol: 'PTT',
-            companyName: 'PTT Public Company Limited',
-            status: 'Buy',
-            reason: 'ราคา Break EMA20 + ปริมาณซื้อเพิ่มสูง',
-            timeStamp: "2025-07-05T15:24:44.540Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'CPALL',
-            companyName: 'CP All Public Company Limited',
-            status: 'Hold',
-            reason: 'ราคาแกว่งตัวในกรอบ ยังไม่ชัดเจน',
-            timeStamp: "2025-07-01T06:27:46.180Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'AOT',
-            companyName: 'Airports of Thailand Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายต่อเนื่องและต่ำกว่า EMA20',
-            timeStamp: "2025-07-10T22:39:12.318Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'SCB',
-            companyName: 'The Siam Commercial Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'สัญญาณ MACD ตัดขึ้นเหนือเส้นศูนย์',
-            timeStamp: "2025-07-07T08:09:20.069Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'ADVANC',
-            companyName: 'Advanced Info Service Public Company Limited',
-            status: 'Hold',
-            reason: 'ยังไม่มีแนวโน้มที่ชัดเจนจาก RSI',
-            timeStamp: "2025-07-13T14:19:51.526Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'GULF',
-            companyName: 'Gulf Energy Development Public Company Limited',
-            status: 'Sell',
-            reason: 'ราคาลงต่อเนื่องหลายวันติดต่อกัน',
-            timeStamp: "2025-07-03T23:02:54.200Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'BBL',
-            companyName: 'Bangkok Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'เกิด Golden Cross บนกราฟรายวัน',
-            timeStamp: "2025-07-12T05:54:52.304Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'DELTA',
-            companyName: 'Delta Electronics (Thailand) Public Company Limited',
-            status: 'Hold',
-            reason: 'Sideway แคบ รอเบรกแนวต้าน',
-            timeStamp: "2025-07-10T09:48:46.328Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'TRUE',
-            companyName: 'True Corporation Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายสูง RSI ต่ำกว่า 30',
-            timeStamp: "2025-07-07T18:12:12.399Z",
-            isFavorite: true,
-        },
-    ]
 
     const statusCounts = stockList.reduce(
         (acc, item) => {
@@ -138,7 +63,7 @@ function StockSignal({ onSwitchChange, stock }) {
 
             switch (sortSelected.id) {
                 case 1: // companyName
-                    compareValue = a.companyName.localeCompare(b.companyName);
+                    compareValue = a.stockSymbol.localeCompare(b.stockSymbol);
                     break;
                 case 2: // status
                     compareValue = a.status.localeCompare(b.status);
@@ -333,6 +258,7 @@ function StockSignal({ onSwitchChange, stock }) {
                                                 minute: '2-digit',
                                                 hour12: true,
                                             })}`}
+                                            price={stock.stockPrice}
                                         />
                                     </div>
                                 ))}

@@ -19,96 +19,86 @@ function Dashboard() {
     const [expanded, setExpanded] = useState(false);
     const navigate = useNavigate();
 
-    const stockList = [
-        {
-            stockSymbol: 'PTT',
-            companyName: 'PTT Public Company Limited',
-            status: 'Buy',
-            reason: 'ราคา Break EMA20 + ปริมาณซื้อเพิ่มสูง',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:30',
-            isFavorite: true,
-            changePct: 1.5, // Example percentage change
-        },
-        {
-            stockSymbol: 'CPALL',
-            companyName: 'CP All Public Company Limited',
-            status: 'Hold',
-            reason: 'ราคาแกว่งตัวในกรอบ ยังไม่ชัดเจน',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:15',
-            isFavorite: true,
-            changePct: 0.3, // Example percentage change
-        },
-        {
-            stockSymbol: 'AOT',
-            companyName: 'Airports of Thailand Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายต่อเนื่องและต่ำกว่า EMA20',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:45',
-            isFavorite: true,
-            changePct: -0.5, // Example percentage change
-        },
-        {
-            stockSymbol: 'SCB',
-            companyName: 'The Siam Commercial Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'สัญญาณ MACD ตัดขึ้นเหนือเส้นศูนย์',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 13:50',
-            isFavorite: true,
-            changePct: 1.2, // Example percentage change
-        },
-        {
-            stockSymbol: 'ADVANC',
-            companyName: 'Advanced Info Service Public Company Limited',
-            status: 'Hold',
-            reason: 'ยังไม่มีแนวโน้มที่ชัดเจนจาก RSI',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:20',
-            isFavorite: true,
-            changePct: 0.8, // Example percentage change
-        },
-        {
-            stockSymbol: 'GULF',
-            companyName: 'Gulf Energy Development Public Company Limited',
-            status: 'Sell',
-            reason: 'ราคาลงต่อเนื่องหลายวันติดต่อกัน',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:10',
-            isFavorite: true,
-            changePct: -1.5, // Example percentage change
-        },
-        {
-            stockSymbol: 'BBL',
-            companyName: 'Bangkok Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'เกิด Golden Cross บนกราฟรายวัน',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:40',
-            isFavorite: true,
-            changePct: 0.5, // Example percentage change
-        },
-        {
-            stockSymbol: 'DELTA',
-            companyName: 'Delta Electronics (Thailand) Public Company Limited',
-            status: 'Hold',
-            reason: 'Sideway แคบ รอเบรกแนวต้าน',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:35',
-            isFavorite: true,
-            changePct: 1.2, // Example percentage change
-        },
-        {
-            stockSymbol: 'TRUE',
-            companyName: 'True Corporation Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายสูง RSI ต่ำกว่า 30',
-            timeStamp: 'อัปเดตล่าสุด: 2025-07-08 14:00',
-            isFavorite: true,
-            changePct: -2.5, // Example percentage change
-        },
-    ]
+    function getRandomDate(start, end) {
+        const timestamp = start.getTime() + Math.random() * (end.getTime() - start.getTime());
+        return new Date(timestamp);
+    }
+
+    const companyNames = [
+        'TechNova', 'GreenLeaf', 'Skyline Corp', 'Quantum Solutions', 'BlueWave',
+        'Solaris Ltd', 'NextGen Tech', 'Apex Industries', 'Everest Systems', 'FusionWorks',
+        'Nimbus', 'Luna Innovations', 'Atlas Group', 'Vertex Inc', 'Pinnacle',
+        'Echo Enterprises', 'Zenith', 'NovaCore', 'Horizon Dynamics', 'PulseTech',
+        'Infinity Edge', 'Crimson Technologies', 'TerraMind', 'CloudMatrix', 'BrightSpark Labs',
+        'Orion Systems', 'Titanium Labs', 'Velox Technologies', 'Hyperlink Solutions', 'AstroSoft',
+        'Nebula Systems', 'CoreVision', 'GlidePath Inc', 'DataForge', 'MetroLogic',
+        'Synthex Corp', 'Oceanic Global', 'StratosTech', 'AetherWorks', 'FlareSoft',
+        'HelioWave', 'Trinity Dynamics', 'Falcon Enterprises', 'ZenLab', 'VirtuNet',
+        'NovaLink', 'GreenGrid Technologies', 'OmniCore', 'FireFly Systems', 'Magnetar Tech',
+        'EchoGrid', 'Altura Solutions', 'CloudFabrik', 'MomentumX', 'SkyNetics',
+        'Redline Systems', 'DigitalForge', 'EagleSoft', 'Cobalt Innovations', 'QuantumFlow',
+        'SilverPeak Group', 'TerraNova Inc', 'Nexora', 'AlphaBridge', 'Vortex Solutions',
+        'OptimaCorp', 'UrbanGrid', 'BrightForge', 'PulseDynamics', 'BlueOrbit Technologies',
+        'VertexCore', 'InnoWave', 'NeoGenix', 'LuxeSoft', 'StormGrid',
+        'SolarEdge Systems', 'InfiniCore', 'CloudCrest', 'Equinox Group', 'AegisWorks',
+        'CodeVerge', 'ZenCore', 'VectorLogic', 'VantaLabs', 'HyperNova Corp',
+        'KineticSoft', 'MaximaTech', 'SkyBridge Inc', 'PrismEdge', 'GreenNova',
+        'Ascendia', 'OmegaEdge', 'IgniteLabs', 'Civitas Systems', 'BrightNet',
+        'NextEra Solutions', 'HoloTech', 'LuminaCore', 'BlueStone Group', 'EclipseSoft'
+    ];
+
+    const generateRandomSymbol = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+
+        const length = Math.floor(Math.random() * 2) + 2; // 2-3 ตัว
+
+        let symbol = '';
+        for (let i = 0; i < length; i++) {
+            symbol += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // สุ่ม 50% ว่าจะต่อท้ายด้วยตัวเลขหรือไม่
+        if (Math.random() < 0.5) {
+            symbol += numbers.charAt(Math.floor(Math.random() * numbers.length));
+        }
+
+        return symbol;
+    };
+
+    const favoriteIndexes = new Set();
+    while (favoriteIndexes.size < 9) {
+        favoriteIndexes.add(Math.floor(Math.random() * 90));
+    }
+
+    const mockStockData = Array.from({ length: 90 }, (_, index) => {
+        const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
+        const companyName = companyNames[Math.floor(Math.random() * companyNames.length)];
+        const stockPrice = Math.floor(Math.random() * (100 - 20 + 1)) + 20; // สุ่มระหว่าง 20 ถึง 100
+
+        const changePct = (Math.random() * 10 - 5).toFixed(2);  // สุ่ม -5.00 ถึง +5.00
+
+        return {
+            stockSymbol: generateRandomSymbol(),
+            companyName,
+            status: ['Buy', 'Sell', 'Hold'][index % 3],
+            reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][index % 3],
+            timeStamp: randomDate.toISOString(),
+            isFavorite: favoriteIndexes.has(index),
+            stockPrice,
+            changePct: parseFloat(changePct),  // แปลงกลับเป็นตัวเลขจริง
+        };
+    });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+    const [stocks, setStocks] = useState(mockStockData);
 
-    const filteredStocks = stockList.filter((stock) =>
+    const filteredStocks = stocks.filter((stock) =>
         stock.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const favoriteStocks = stocks.filter(stock => stock.isFavorite);
 
     const handleSelect = (stock) => {
         setStockDetail(stock);
@@ -257,7 +247,7 @@ function Dashboard() {
                             `}
                         >
                             <nav className="mt-3 text-white max-h-65 overflow-y-auto">
-                                {stockList.map((stock, index) => (
+                                {favoriteStocks.map((stock, index) => (
                                     <div key={index} className="flex items-center p-2 justify-between">
                                         <div className="flex items-center space-x-3">
                                             <div
@@ -342,6 +332,7 @@ function Dashboard() {
                         key={signalKey}
                         onSwitchChange={switchState}
                         stock={stockDetail}
+                        stockList={favoriteStocks}
                     />
                 )}
 
