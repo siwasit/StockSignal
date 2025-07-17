@@ -75,12 +75,11 @@
 //     );
 // }
 
-// export default StockCard;
 import React from 'react';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 
-function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick }) {
+function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick, price }) {
     const statusColor = {
         Buy: 'text-green-400',
         Hold: 'text-yellow-400',
@@ -97,15 +96,11 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggl
     return (
         <div
             onClick={onClick}
-            className={`bg-[#3E4355] hover:bg-[#5D6275] rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border-2 ${
-                status === 'Buy' ? 'border-[#41DC8E]' :
-                status === 'Hold' ? 'border-[#E0B469]' :
-                status === 'Sell' ? 'border-[#FF8282]' : 'border-transparent'
-            }`}
+            className="bg-[#3E4355] hover:bg-[#5D6275] rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border border-[#6B7280]"
         >
             <div className="flex-grow flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                    <div className="text-2xl font-bold text-[#9B76D3]">{stockSymbol}</div>
+                    <div className="text-2xl font-bold text-white">{stockSymbol}</div>
                     <div
                         onClick={(e) => {
                             e.stopPropagation();
@@ -121,6 +116,10 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggl
                     </div>
                 </div>
 
+                <div className="text-base text-gray-300">
+                    ราคา: <span className="font-bold">{price != null ? `${price} บาท` : '- บาท'}</span>
+                </div>
+
                 <div className="flex items-center gap-2">
                     <div className="text-lg">สถานะ:</div>
                     <div className={`text-lg font-bold ${statusColor}`}>{status}</div>
@@ -133,7 +132,7 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggl
                 </div>
             </div>
 
-            <div className="text-sm text-end text-[#CDCDCD] mt-2">{timeStamp}</div>
+            <div className="text-base text-end text-[#CDCDCD] mt-2">{timeStamp}</div>
         </div>
     );
 }

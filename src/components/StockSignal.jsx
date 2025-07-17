@@ -192,7 +192,7 @@ function StockSignal({ onSwitchChange, stock }) {
                         <div className='flex items-center justify-between'>
                             <div className='flex items-center gap-4'>
                                 <div className="text-white text-3xl font-semibold pb-1">หุ้นที่ติดตาม</div>
-                                <img src="/icon/watchlist.svg" alt="Watchlist" className="w-8 h-8" />
+                                <img src="/icons/watchlist.svg" alt="Watchlist" className="w-8 h-8" />
                             </div>
                             <div className="flex items-center self-end gap-4 ">
                                 {/* หุ้นยอดนิยม */}

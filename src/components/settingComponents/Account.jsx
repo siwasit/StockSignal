@@ -191,7 +191,7 @@ function Account() {
 
                 </div>
 
-                <div className="border-2 border-[#868686] w-full rounded-xl bg-black/20 text-white p-4 flex items-center gap-4">
+                {/* <div className="border-2 border-[#868686] w-full rounded-xl bg-black/20 text-white p-4 flex items-center gap-4">
                     <div className="flex-1">
                         <p className="text-lg font-medium text-white">
                             Export ข้อมูล
@@ -204,7 +204,7 @@ function Account() {
                     <div className='border border-[#F4F3F2] text-center cursor-pointer w-36 rounded-lg px-3 py-2 hover:bg-gray-500'>
                         เปลี่ยน
                     </div>
-                </div>
+                </div> */}
 
                 <div className="border border-[#FF8282] w-full rounded-xl bg-black/20 text-white p-4 flex items-center gap-4">
                     <div className="flex-1">

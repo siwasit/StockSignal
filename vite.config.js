@@ -10,6 +10,6 @@ export default defineConfig({
   ],
   server: {
     port: 3006, // ← your desired port
-    allowedHosts: ['8f9c455270ae.ngrok-free.app'],
+    allowedHosts: ['f5d53aa06f5e.ngrok-free.app'],
   },
 })
