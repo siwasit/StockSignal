@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, SortAsc, SortDesc } from 'lucide-react';
 
 
-function AllStock({ stock, onSwitchChange }) {
+function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
     const stockOptions = [
         { id: 1, name: 'หุ้นทั้งหมด' },
         { id: 2, name: 'หุ้นยอดนิยม' },
@@ -37,9 +37,9 @@ function AllStock({ stock, onSwitchChange }) {
     ];
 
     const sortOptions = [
-        { id: 1, name: 'ชื่อ' },
-        { id: 2, name: 'สถานะ' },
-        { id: 3, name: 'ล่าสุด' },
+        { id: 1, name: 'Symbol' },
+        { id: 2, name: 'Status' },
+        { id: 3, name: 'อัพเดทล่าสุด' },
         { id: 4, name: 'watchlist' },
     ];
 
@@ -91,7 +91,15 @@ function AllStock({ stock, onSwitchChange }) {
     const [open, setOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
     const [selected, setSelected] = useState(stockOptions[0]);
-    const [stocks, setStocks] = useState(mockStockData);
+
+    // const [stocks, setStocks] = useState(mockStockData);stockList
+    // const [stocks, setStocks] = useState(stockList);
+    const [stocks, setStocks] = useState(() => {
+        // โหลดจาก localStorage ถ้ามี ไม่งั้นเป็น array ว่าง
+        const saved = localStorage.getItem('SET50Stocks');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [sortSelected, setSortSelected] = useState(sortOptions[0]);
     const [sortDirection, setSortDirection] = useState('asc');
     const ref = useRef();
@@ -124,13 +132,13 @@ function AllStock({ stock, onSwitchChange }) {
 
             switch (sortSelected.id) {
                 case 1:
-                    compareValue = a.stockSymbol.localeCompare(b.stockSymbol);
+                    compareValue = (a.stockSymbol ?? '').localeCompare(b.stockSymbol ?? '');
                     break;
                 case 2:
-                    compareValue = a.status.localeCompare(b.status);
+                    compareValue = (a.status ?? '').localeCompare(b.status ?? '');
                     break;
                 case 3:
-                    compareValue = new Date(a.timeStamp) - new Date(b.timeStamp);
+                    compareValue = new Date(a.timeStamp ?? 0) - new Date(b.timeStamp ?? 0);
                     break;
                 case 4:
                     compareValue = (b.isFavorite === true) - (a.isFavorite === true);
@@ -142,11 +150,41 @@ function AllStock({ stock, onSwitchChange }) {
             return sortDirection === 'asc' ? compareValue : -compareValue;
         });
 
-        console.log(sorted)
-
         setStocks(sorted);
         setCurrentPage(1);
     }, [sortSelected, sortDirection]);
+
+    // useEffect(() => {
+    //     // โหลด stocks จาก localStorage
+    //     const storedStocks = JSON.parse(localStorage.getItem('SET50Stocks')) || [];
+
+    //     const sorted = [...storedStocks].sort((a, b) => {
+    //         let compareValue = 0;
+
+    //         switch (sortSelected.id) {
+    //             case 1:
+    //                 compareValue = (a.stockSymbol ?? '').localeCompare(b.stockSymbol ?? '');
+    //                 break;
+    //             case 2:
+    //                 compareValue = (a.status ?? '').localeCompare(b.status ?? '');
+    //                 break;
+    //             case 3:
+    //                 compareValue = new Date(a.timeStamp ?? 0) - new Date(b.timeStamp ?? 0);
+    //                 break;
+    //             case 4:
+    //                 // favorite: ให้ตัวที่ isFavorite=true อยู่ข้างบน
+    //                 compareValue = (b.isFavorite === true) - (a.isFavorite === true);
+    //                 break;
+    //             default:
+    //                 compareValue = 0;
+    //         }
+
+    //         return sortDirection === 'asc' ? compareValue : -compareValue;
+    //     });
+
+    //     setStocks(sorted);
+    //     setCurrentPage(1);
+    // }, [sortSelected, sortDirection]);
 
     useEffect(() => {
         if (selected.id === 2 && popularStocks.length === 0) {
@@ -155,20 +193,54 @@ function AllStock({ stock, onSwitchChange }) {
         }
     }, [selected, stocks]);
 
+    // toggle favorite state ใน stocks
+    // const handleToggleFavorite = (symbol) => {
+    //     setStocks(prevStocks =>
+    //         prevStocks.map(s => {
+    //             if (s.stockSymbol === symbol) {
+    //                 const newIsFavorite = !s.isFavorite;
+    //                 // console.log(`[Toggle Favorite] ${symbol}: ${s.isFavorite} → ${newIsFavorite}`);
+
+    //                 return {
+    //                     ...s,
+    //                     isFavorite: newIsFavorite,
+    //                     favoriteAt: newIsFavorite ? Date.now() : null
+    //                 };
+    //             }
+    //             return s;
+    //         })
+    //     );
+    // };
     const handleToggleFavorite = (symbol) => {
-        setStocks((prevStocks) =>
-            prevStocks.map((s) => {
-                if (s.stockSymbol === symbol) {
-                    return {
-                        ...s,
-                        isFavorite: !s.isFavorite,
-                        favoriteAt: !s.isFavorite ? Date.now() : null
-                    };
-                }
-                return s;
-            })
-        );
+        const updatedStocks = stocks.map(s => {
+            if (s.stockSymbol === symbol) {
+                const newIsFavorite = !s.isFavorite;
+
+                return {
+                    ...s,
+                    isFavorite: newIsFavorite,
+                    favoriteAt: newIsFavorite ? Date.now() : null
+                };
+            }
+            return s;
+        });
+
+        setStocks(updatedStocks);
+
+        // ✅ ส่งเฉพาะหุ้นที่ favorite อยู่ไปให้ parent
+        const updatedFavorites = updatedStocks.filter(s => s.isFavorite);
+        onFavoriteChange(updatedFavorites);
     };
+
+
+    // useEffect ซิงก์ FavoriteStocks ใน localStorage ทุกครั้งที่ stocks เปลี่ยน
+    useEffect(() => {
+        const favoriteOnly = stocks.filter(s => s.isFavorite);
+
+        localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+        localStorage.setItem('SET50Stocks', JSON.stringify(stocks));
+    }, [stocks]);
+
 
     const stocksPerPage = 15;
 
@@ -196,6 +268,35 @@ function AllStock({ stock, onSwitchChange }) {
         const end = start + stocksPerPage;
         return result.slice(start, end);
     })();
+
+    // const filteredStocks = (() => {
+    //     // โหลด stocks จาก localStorage (ถ้าไม่มี ให้เป็น array ว่าง)
+    //     const storedStocks = JSON.parse(localStorage.getItem('SET50Stocks')) || [];
+
+    //     let result = [];
+
+    //     if (selected.id === 2) {
+    //         if (popularStocks.length === 0) return [];
+    //         result = storedStocks.filter(stock =>
+    //             popularStocks.some(p => p.stockSymbol === stock.stockSymbol)
+    //         );
+    //         return result;
+    //     }
+
+    //     if (sortSelected.id === 4) {
+    //         result = [...storedStocks].sort((a, b) => {
+    //             if (a.isFavorite === b.isFavorite) return 0;
+    //             return a.isFavorite ? -1 : 1;
+    //         });
+    //     } else {
+    //         result = storedStocks;
+    //     }
+
+    //     const start = (currentPage - 1) * stocksPerPage;
+    //     const end = start + stocksPerPage;
+    //     return result.slice(start, end);
+    // })();
+
 
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -226,7 +327,7 @@ function AllStock({ stock, onSwitchChange }) {
                         <CandlestickIcon />
                     </div>
                     <div className="flex items-center self-end gap-4 ">
-                        <div className="relative w-60" ref={ref}>
+                        {/* <div className="relative w-60" ref={ref}>
                             <div
                                 className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
                                 onClick={() => setOpen(!open)}
@@ -245,7 +346,7 @@ function AllStock({ stock, onSwitchChange }) {
                                     >{option.name}</div>
                                 ))}
                             </div>
-                        </div>
+                        </div> */}
 
                         <div className="relative w-60" ref={sortRef}>
                             <div
@@ -303,7 +404,8 @@ function AllStock({ stock, onSwitchChange }) {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-4">
                         {filteredStocks.map((stock, index) => (
-                            <div key={index} className="animate__animated animate__fadeInUp">
+                            // animate__animated animate__fadeInUp
+                            <div key={index} className="">
                                 <StockCard
                                     stockSymbol={stock.stockSymbol}
                                     price={stock.stockPrice}

@@ -4,7 +4,7 @@ import StockCard from './StockCard';
 import StockDetail from './StockDetail';
 import 'animate.css';
 
-function StockSignal({ onSwitchChange, stock, stockList }) {
+function StockSignal({ onSwitchChange, stock, stockList, onFavoriteChange }) {
     // console.log("StockSignal component rendered with stock:", stock);
 
     const statusCounts = stockList.reduce(
@@ -21,9 +21,9 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
     ];
 
     const sortOptions = [
-        { id: 1, name: 'ชื่อ' },
-        { id: 2, name: 'สถานะ' },
-        { id: 3, name: 'ล่าสุด' },
+        { id: 1, name: 'Symbol' },
+        { id: 2, name: 'Signal' },
+        { id: 3, name: 'อัพเดทล่าสุด' },
     ];
 
     const [open, setOpen] = useState(false);
@@ -38,7 +38,12 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
         setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     };
 
-    const [sortedStock, setSortedStock] = useState(stockList);
+    // const [sortedStock, setSortedStock] = useState(stockList);
+    const [sortedStock, setSortedStock] = useState(() => {
+        // โหลดจาก localStorage ถ้ามี ไม่งั้นเป็น array ว่าง
+        const saved = localStorage.getItem('FavoriteStocks');
+        return saved ? JSON.parse(saved) : [];
+    });
 
     const ref = useRef();
     const sortRef = useRef();
@@ -58,7 +63,7 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
     }, []);
 
     useEffect(() => {
-        const sorted = [...stockList].sort((a, b) => {
+        const sorted = [...sortedStock].sort((a, b) => {
             let compareValue = 0;
 
             switch (sortSelected.id) {
@@ -80,6 +85,76 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
 
         setSortedStock(sorted);
     }, [sortSelected, sortDirection]);
+
+    const handleToggleFavorite = (symbol) => {
+        setSortedStock(prevStocks => {
+            // ลบหุ้นที่ติ๊กดาวออกจาก favorite
+            const updatedFavoriteStocks = prevStocks.filter(s => s.stockSymbol !== symbol);
+
+            // อัปเดต localStorage ของ FavoriteStocks
+            localStorage.setItem('FavoriteStocks', JSON.stringify(updatedFavoriteStocks));
+
+            // อัปเดต localStorage ของ SET50Stocks
+            const set50StocksRaw = localStorage.getItem('SET50Stocks');
+            if (set50StocksRaw) {
+                try {
+                    const set50Stocks = JSON.parse(set50StocksRaw);
+
+                    // อัปเดต isFavorite ของ SET50Stocks ให้ตรงกับ favorite จริงๆ
+                    const updatedSet50Stocks = set50Stocks.map(stock => ({
+                        ...stock,
+                        isFavorite: updatedFavoriteStocks.some(fav => fav.stockSymbol === stock.stockSymbol),
+                        favoriteAt: updatedFavoriteStocks.find(fav => fav.stockSymbol === stock.stockSymbol)?.favoriteAt || null
+                    }));
+
+                    localStorage.setItem('SET50Stocks', JSON.stringify(updatedSet50Stocks));
+                } catch (e) {
+                    console.error('Failed to parse SET50Stocks from localStorage', e);
+                }
+            }
+
+            // ✅ แจ้ง parent ว่า favorite stocks ถูกอัปเดตแล้ว
+            onFavoriteChange(updatedFavoriteStocks);
+
+            // ✅ return ค่าใหม่ให้ state (React UI จะ render ใหม่)
+            return updatedFavoriteStocks;
+        });
+    };
+
+
+
+    // useEffect ซิงก์ FavoriteStocks ใน localStorage ทุกครั้งที่ stocks เปลี่ยน
+    // useEffect(() => {
+    //     // 1️⃣ ดึง SET50Stocks เดิมออกมา
+    //     const storedStocks = JSON.parse(localStorage.getItem('SET50Stocks')) || [];
+
+    //     // 2️⃣ อัปเดตหุ้นตามสถานะใน sortedStock
+    //     const updatedStocks = storedStocks.map(existingStock => {
+    //         const updated = sortedStock.find(s => s.stockSymbol === existingStock.stockSymbol);
+
+    //         if (updated) {
+    //             // เปรียบเทียบเฉพาะ isFavorite (หรือ field อื่น ๆ ตามต้องการ)
+    //             if (existingStock.isFavorite !== updated.isFavorite) {
+    //                 return {
+    //                     ...existingStock,
+    //                     isFavorite: updated.isFavorite,
+    //                     favoriteAt: updated.favoriteAt  // ถ้ามี
+    //                 };
+    //             }
+    //         }
+
+    //         return existingStock;
+    //     });
+
+    //     // 3️⃣ บันทึก stocks ที่อัปเดตแล้วกลับเข้า localStorage
+    //     localStorage.setItem('SET50Stocks', JSON.stringify(updatedStocks));
+
+    //     // 4️⃣ สร้าง FavoriteStocks ใหม่จาก updatedStocks
+    //     // const favoriteOnly = updatedStocks.filter(s => s.isFavorite);
+    //     // localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+    // }, [sortedStock]);
+
 
     return (
         <div className=' px-4'>
@@ -121,7 +196,7 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
                             </div>
                             <div className="flex items-center self-end gap-4 ">
                                 {/* หุ้นยอดนิยม */}
-                                <div className="relative w-60" ref={ref}>
+                                {/* <div className="relative w-60" ref={ref}>
                                     <div
                                         className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
                                         onClick={() => setOpen(!open)}
@@ -159,7 +234,7 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <div className="relative w-60" ref={sortRef}>
                                     <div
@@ -240,16 +315,12 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
                         <div className="mt-4">
                             <div className="grid grid-cols-1 my-1 md:grid-cols-3 gap-4 mt-2">
                                 {sortedStock.map((stock, index) => (
-                                    <div key={index} onClick={() => {
-                                        setSwitchState(!switchState);
-                                        setStockDetail(stock);
-                                    }}
-                                        className='cursor-pointer animate__animated animate__fadeInUp'>
+                                    <div key={index} className="">
                                         <StockCard
                                             stockSymbol={stock.stockSymbol}
+                                            price={stock.stockPrice}
                                             status={stock.status}
                                             reason={stock.reason}
-                                            isFavorite={stock.isFavorite}
                                             timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
                                                 day: '2-digit',
                                                 month: '2-digit',
@@ -258,7 +329,12 @@ function StockSignal({ onSwitchChange, stock, stockList }) {
                                                 minute: '2-digit',
                                                 hour12: true,
                                             })}`}
-                                            price={stock.stockPrice}
+                                            isFavorite={stock.isFavorite}
+                                            onToggleFavorite={() => handleToggleFavorite(stock.stockSymbol)}
+                                            onClick={() => {
+                                                setSwitchState(!switchState);
+                                                setStockDetail(stock);
+                                            }}
                                         />
                                     </div>
                                 ))}

@@ -129,7 +129,7 @@ function StockDetail({ stock }) {
     useEffect(() => {
         const data = generateCandlestickData('2023-01-01', 540);
         setSampleData(data);
-        console.log(data)
+        // console.log(data)
     }, []);
 
     useEffect(() => {
@@ -390,21 +390,43 @@ function StockDetail({ stock }) {
             animate="visible"
             variants={containerVariants}
         >
-            <div className='flex flex-col'>
-                <div className='flex flex-col'>
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="text-white text-3xl font-semibold">{stockDetail.stockSymbol}</div>
-                        <div className='flex gap-4 items-center'>
-                            <div onClick={toggleFavorite} className="cursor-pointer">
-                                {stockDetail.isFavorite ? (
-                                    <StarSolid className="w-8 h-8 text-yellow-300" />
-                                ) : (
-                                    <StarOutline className="w-8 h-8 text-yellow-300" />
-                                )}
+            <div className='flex flex-col mt-4'>
+                <div className="flex items-center space-x-4 w-full">
+                    <img
+                        src={stock.logo}            // ลิงก์โลโก้หุ้นจากข้อมูล stock
+                        alt={stock.stockSymbol}     // ใส่ชื่อหุ้นใน alt เพื่อ SEO / Accessibility
+                        className="w-15 h-15 rounded-full object-cover"
+                    />
+
+                    <div className="flex-1 pr-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="text-white text-3xl font-semibold">{stockDetail.stockSymbol}</div>
+                            <div className='flex gap-4 items-center'>
+                                <div onClick={toggleFavorite} className="cursor-pointer">
+                                    {stockDetail.isFavorite ? (
+                                        <StarSolid className="w-8 h-8 text-yellow-300" />
+                                    ) : (
+                                        <StarOutline className="w-8 h-8 text-yellow-300" />
+                                    )}
+                                </div>
                             </div>
                         </div>
+                        <div className="text-[#8C8F99] flex justify-between gap-4 text-xl">
+                            {stockDetail.companyName}
+                            <div className="text-sm text-gray-400">
+                                อัพเดทล่าสุด :&nbsp;
+                                {new Date(stockDetail.timeStamp).toLocaleString('th-TH', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    hour12: false
+                                })}
+                            </div>
+                        </div>
+
                     </div>
-                    <div className="text-[#8C8F99] flex justify-between  gap-4 text-xl">{stockDetail.companyName} <div className="text-sm text-gray-400">{stockDetail.timeStamp}</div></div>
                 </div>
 
                 <div className='flex w-full h-full mb-4'>
@@ -485,7 +507,7 @@ function StockDetail({ stock }) {
 
                         <div className='text-end px-3 text-[#868686]'>ตัวชี้วัด: RSI 68 | MACD +1.2 | EMA20</div>
                         <div className='flex flex-col'>
-                            <div className='text-2xl text-white font-bold my-4'>ข้อมูลบริษัท</div>
+                            <div className='text-2xl text-white font-bold my-4'>ข้อมูล{stockDetail.ThaiCompanyName}</div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
                                 <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
                                     <div className='text-lg font-medium'>มูลค่าตามราคาตลาด</div>

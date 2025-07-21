@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ChevronUpIcon, ChevronDownIcon, History, Search, LineChart } from 'lucide-react'; // optional icon set
 import { HomeIcon, BellIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/solid';
 import StockSignal from '../components/StockSignal';
@@ -94,11 +94,243 @@ function Dashboard() {
     const [showDropdown, setShowDropdown] = useState(false);
     const [stocks, setStocks] = useState(mockStockData);
 
-    const filteredStocks = stocks.filter((stock) =>
+
+
+
+
+    // const favoriteStocks = stocks.filter(stock => stock.isFavorite);
+    const [favoriteStocks, setFavoriteStocks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [signalKey, setSignalKey] = useState(0);
+    const [SET50Stocks, setSET50Stocks] = useState([]);
+    // const [favoriteSideBarStocks, setFavoriteSideBarStocks] = useState([]);
+    // useEffect(() => {
+    //     const fetchFavoriteStocks = async () => {
+    //         const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
+    //         try {
+    //             setLoading(true);
+    //             setError(null);
+
+    //             const response = await fetch(
+    //                 "http://127.0.0.1:3007/favoriteStock/PTT,CPALL,TPLAS,SCB,BBL,AOT,TRUE,ADVANC,KBANK"
+    //             );
+
+    //             if (!response.ok) {
+    //                 throw new Error(`HTTP error! status: ${response.status}`);
+    //             }
+
+    //             const data = await response.json();
+
+    //             // สมมติ favoriteIndexes เป็น Set ของ index ที่เป็น favorite
+
+    //             const statuses = ['Buy', 'Sell', 'Hold'];
+    //             const reasons = ['Break EMA', 'Volume Surge', 'MACD Signal'];
+
+    //             const enrichedData = (data.data || []).map((stock, index) => ({
+    //                 ...stock,
+    //                 status: statuses[index % statuses.length],
+    //                 reason: reasons[index % reasons.length],
+    //                 timeStamp: randomDate.toISOString(),
+    //                 isFavorite: true,
+    //             }));
+
+    //             setFavoriteStocks(enrichedData);
+    //         } catch (err) {
+    //             setError(err.message || "Unknown error");
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     };
+
+    //     fetchFavoriteStocks();
+    //     // setSignalKey(prev => (prev === 0 ? 1 : 0));
+    // }, []);
+    // useEffect(() => {
+    //     const eventSource = new EventSource(
+    //         "http://127.0.0.1:3007/streamStockPrice?symbols=PTT,CPALL,TPLAS,SCB,BBL,AOT,TRUE,ADVANC,KBANK"
+    //     );
+
+    //     eventSource.onmessage = (event) => {
+    //         const data = JSON.parse(event.data);
+    //         console.log("SSE received:", data);
+    //         const statuses = ['Buy', 'Sell', 'Hold'];
+    //         const reasons = ['Break EMA', 'Volume Surge', 'MACD Signal'];
+    //         const randomDate = getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59));
+
+    //         // สมมติ data เป็น object เดียว ไม่ใช่ data.data เป็น array
+    //         // ถ้า backend ส่งทีละ stock object ก็แก้แบบนี้
+    //         const enrichedStock = {
+    //             ...data,
+    //             status: statuses[Math.floor(Math.random() * statuses.length)],
+    //             reason: reasons[Math.floor(Math.random() * reasons.length)],
+    //             timeStamp: randomDate.toISOString(),
+    //             isFavorite: true,
+    //         };
+
+    //         setFavoriteStocks((prev) => [...prev, enrichedStock]);
+    //         setLoading(false);
+    //     };
+
+    //     eventSource.onerror = (err) => {
+    //         console.error("SSE error:", err);
+    //         setError("SSE connection error");
+    //         setLoading(false);
+    //         eventSource.close();
+    //     };
+
+    //     return () => {
+    //         eventSource.close();
+    //     };
+    // }, []);
+
+    const BATCH_SIZE = 5;
+    const SET50 = [
+        "ADVANC", "AOT", "AWC", "BANPU", "BBL", "BCP", "BDMS", "BEM", "BH", "BJC",
+        "BTS", "CBG", "CCET", "COM7", "CPALL", "CPF", "CPN", "CRC", "DELTA", "EGCO",
+        "GPSC", "GULF", "HMPRO", "IVL", "KBANK", "KKP", "KTB", "KTC", "LH", "MINT",
+        "MTC", "OR", "OSP", "PTT", "PTTEP", "PTTGC", "RATCH", "SCB", "SCC", "SCGP",
+        "TCAP", "TIDLOR", "TISCO", "TLI", "TOP", "TRUE", "TTB", "TU", "VGI", "WHA"
+    ];
+
+    const favoriteSymbols = [
+        "PTT", "CPALL", "TPLAS", "SCB", "BBL",
+        "AOT", "TRUE", "ADVANC", "KBANK"
+    ];
+    const didFetch = useRef(false);
+
+    useEffect(() => {
+        if (didFetch.current) return;
+        didFetch.current = true;
+
+        function replaceOrAppendStocks(prevStocks, updatedStocks) {
+            const updatedSymbols = updatedStocks.map(stock => stock.stockSymbol?.toUpperCase());
+
+            const replacedStocks = prevStocks.map(existingStock => {
+                const index = updatedSymbols.indexOf(existingStock.stockSymbol?.toUpperCase());
+                return index !== -1 ? updatedStocks[index] : existingStock;
+            });
+
+            const newStocks = updatedStocks.filter(
+                stock => !prevStocks.some(s => s.stockSymbol?.toUpperCase() === stock.stockSymbol?.toUpperCase())
+            );
+
+            return [...replacedStocks, ...newStocks];
+        }
+
+        let tempResults = [];
+        // ย้ายออกมาเป็นฟังก์ชันระดับ useEffect (ไม่ซ้อน)
+        async function fetchAndProcessSymbols(symbols) {
+            for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+                const batch = symbols.slice(i, i + BATCH_SIZE);
+                const symbolQuery = batch.join(",");
+
+                const response = await fetch(`http://127.0.0.1:3007/StockData/${encodeURIComponent(symbolQuery)}`);
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
+
+                const json = await response.json();
+                const stocksArray = Array.isArray(json.data) ? json.data : [json.data];
+
+                const enrichedBatch = stocksArray.map((stock) => {
+                    const enrichedStock = {
+                        ...stock,
+                        status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
+                        reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][Math.floor(Math.random() * 3)],
+                        timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
+                        isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase())
+                    };
+
+                    return enrichedStock;
+                });
+
+                const favoriteBatch = enrichedBatch.filter(s => s.isFavorite);
+
+                if (favoriteBatch.length > 0) {
+                    setFavoriteStocks(prev => replaceOrAppendStocks(prev, favoriteBatch));
+                }
+
+                tempResults = [...tempResults, ...enrichedBatch];
+                setSET50Stocks(prev => replaceOrAppendStocks(prev, enrichedBatch));
+
+                // ✅ หลังจบแต่ละ Batch → เซฟ localStorage ทันที
+                localStorage.setItem('SET50Stocks', JSON.stringify(tempResults));
+
+                const favoriteOnly = tempResults.filter(s => s.isFavorite);
+                localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+                console.log(`💾 Saved batch ${i / BATCH_SIZE + 1} to localStorage`);
+            }
+        }
+
+
+        // ย้ายออกมาอยู่ข้างนอกเช่นกัน
+        async function checkAndReloadMissing(results) {
+            const missingSymbols = results
+                .filter(stock =>
+                    !stock?.stockSymbol ||
+                    stock?.stockPrice == null ||
+                    stock?.changePct == null
+                )
+                .map(stock => stock?.stockSymbol)
+                .filter(Boolean);
+
+            if (missingSymbols.length > 0) {
+                console.warn("🔄 Reload missing stocks:", missingSymbols);
+                await fetchAndProcessSymbols(missingSymbols);
+            }
+        }
+
+        async function fetchStocksInTwoSteps() {
+            setLoading(true);
+            setError(null);
+
+            try {
+                setSET50Stocks([]);
+                setFavoriteStocks([]);
+
+                // 1️⃣ โหลดหุ้น favorite ก่อน
+                await fetchAndProcessSymbols(favoriteSymbols);
+
+                // 2️⃣ โหลดหุ้น SET50 ที่เหลือจริง ๆ (ไม่เอา favoriteSymbols ซ้ำ)
+                const nonFavoriteSymbols = SET50.filter(
+                    symbol => !favoriteSymbols.includes(symbol)
+                );
+
+                await fetchAndProcessSymbols(nonFavoriteSymbols);
+
+                console.log("✅ Loaded all stocks:", tempResults);
+
+                await checkAndReloadMissing(tempResults);
+
+                // // 3️⃣ เซฟ stocks ทั้งหมดลง SET50Stocks
+                // localStorage.setItem('SET50Stocks', JSON.stringify(tempResults));
+
+                // // 4️⃣ Filter เฉพาะหุ้นที่ favorite จริงๆ แล้วเซฟแยก
+                // const favoriteOnly = tempResults.filter(s => s.isFavorite);
+                // localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+            } catch (err) {
+                setError(err.message || "Unknown error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchStocksInTwoSteps();
+
+    }, []);
+
+
+    const filteredStocks = SET50Stocks.filter((stock) =>
         stock.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const favoriteStocks = stocks.filter(stock => stock.isFavorite);
+    const handleFavoriteChange = (updatedFavorites) => {
+        setFavoriteStocks(updatedFavorites);
+        // console.log(updatedFavorites)
+    };
 
     const handleSelect = (stock) => {
         setStockDetail(stock);
@@ -122,9 +354,7 @@ function Dashboard() {
         window.addEventListener('resize', checkOverflow);
         return () => window.removeEventListener('resize', checkOverflow);
     }, [activeMenu]);
-
-
-    const [signalKey, setSignalKey] = useState(0);
+    
     // min-w-[99vw]' : 'w-[100vw]
     return (
         // <div
@@ -250,14 +480,13 @@ function Dashboard() {
                                 {favoriteStocks.map((stock, index) => (
                                     <div key={index} className="flex items-center p-2 justify-between">
                                         <div className="flex items-center space-x-3">
-                                            <div
-                                                className={`w-6 h-6 rounded-full ${stock.status === 'Buy'
-                                                    ? 'bg-[#41DC8E]'
-                                                    : stock.status === 'Sell'
-                                                        ? 'bg-[#FF8282]'
-                                                        : 'bg-[#E0B469]'
-                                                    }`}
-                                            ></div>
+                                            <div className={`w-6 h-6 rounded-full`}>
+                                                <img
+                                                    src={stock.logo}
+                                                    alt={`${stock.stockSymbol} logo`}
+                                                    className="w-6 h-6 rounded-full object-cover"
+                                                />
+                                            </div>
                                             <span className="text-lg text-white">{stock.stockSymbol}</span>
                                         </div>
                                         <div
@@ -281,7 +510,7 @@ function Dashboard() {
             </div>
 
             {/* Content */}
-            <div className={`flex-1 transition-all duration-300 ${collapsed ? 'ml-24' : 'ml-68'}`}>
+            <div className={`flex-1 relative transition-all min-h-screen duration-300 ${collapsed ? 'ml-24' : 'ml-68'}`}>
                 {/* border-b-1 w-[98%] border-[#868686] mb-4 mx-auto */}
                 <header className="sticky top-0 z-50 flex flex-col items-center justify-between px-4 py-4 bg-[#1F2230] text-white shadow-md">
                     <div className='flex items-center justify-between w-full'>
@@ -300,14 +529,35 @@ function Dashboard() {
                             />
                             <Search className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             {showDropdown && filteredStocks.length > 0 && (
-                                <div className="absolute z-10 mt-1 w-full bg-[#2E3343] border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <div className="absolute z-10 mt-1 w-full bg-[#2E3343] border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
                                     {filteredStocks.map((stock, index) => (
                                         <div
                                             key={index}
-                                            className="px-4 py-2 cursor-pointer hover:bg-[#3E4355] text-white"
+                                            className="px-4 py-2 cursor-pointer flex items-center hover:bg-[#3E4355] text-white"
                                             onClick={() => handleSelect(stock)}
                                         >
-                                            {stock.stockSymbol}
+                                            <img
+                                                src={stock.logo}            // ลิงก์โลโก้หุ้นจากข้อมูล stock
+                                                alt={stock.stockSymbol}     // ใส่ชื่อหุ้นใน alt เพื่อ SEO / Accessibility
+                                                className="w-10 h-10 rounded-full object-cover"
+                                            />
+                                            <div className='flex-1 px-4'>
+                                                <div className="text-white text-sm font-medium">{stock.stockSymbol}</div>
+                                                <div className="text-white text-xs">{stock.companyName}</div>
+                                            </div>
+                                            <div
+                                                className={`text-sm font-medium ${stock.changePct > 0
+                                                    ? 'text-green-300'
+                                                    : stock.changePct < 0
+                                                        ? 'text-red-400'
+                                                        : 'text-gray-400'
+                                                    }`}
+                                            >
+                                                {stock.changePct > 0
+                                                    ? `+${stock.changePct}%`
+                                                    : `${stock.changePct}%`}
+                                            </div>
+
                                         </div>
                                     ))}
                                 </div>
@@ -328,20 +578,67 @@ function Dashboard() {
                 </header>
 
                 {activeMenu === 'dashboard' && (
-                    <StockSignal
-                        key={signalKey}
-                        onSwitchChange={switchState}
-                        stock={stockDetail}
-                        stockList={favoriteStocks}
-                    />
+                    <>
+                        {favoriteStocks.length === 0 ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-100">
+                                <img
+                                    src="/icons/OliveSpinner.svg"
+                                    alt="Loading..."
+                                    className="w-15 h-15 animate-spin mb-2"
+                                />
+                                <div className="text-lg font-semibold text-gray-300">
+                                    Loading favorite stocks...
+                                </div>
+                                {/* <div className="mt-1 text-xl font-bold text-green-400">
+                                    Loaded: {favoriteStocks.length}
+                                </div> */}
+                            </div>
+                        ) : error ? (
+                            <div className="absolute inset-0 flex items-center justify-center text-red-600">
+                                Error: {error}
+                            </div>
+                        ) : (
+                            <StockSignal
+                                key={`${signalKey}-${favoriteStocks.length}`}
+                                onSwitchChange={switchState}
+                                stock={stockDetail}
+                                stockList={favoriteStocks}
+                                onFavoriteChange={handleFavoriteChange}
+                            />
+                        )}
+                    </>
                 )}
 
                 {activeMenu === 'stock' && (
-                    <AllStock
-                        key={signalKey}
-                        onSwitchChange={switchState}
-                        stock={stockDetail}
-                    />
+                    <>
+                        {SET50Stocks.length === 0 ? (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-100">
+                                <img
+                                    src="/icons/OliveSpinner.svg"
+                                    alt="Loading..."
+                                    className="w-15 h-15 animate-spin mb-2"
+                                />
+                                <div className="text-lg font-semibold text-gray-300">
+                                    Loading favorite stocks...
+                                </div>
+                                {/* <div className="mt-1 text-xl font-bold text-green-400">
+                                    Loaded: {SET50Stocks.length} / {SET50.length}
+                                </div> */}
+                            </div>
+                        ) : error ? (
+                            <div className="absolute inset-0 flex items-center justify-center text-red-600">
+                                Error: {error}
+                            </div>
+                        ) : (
+                            <AllStock
+                                key={`${signalKey}-${SET50Stocks.length}`}  // ผสมทั้งรอบ trigger และจำนวน stocks
+                                onSwitchChange={switchState}
+                                stock={stockDetail}
+                                // stockList={SET50Stocks}
+                                onFavoriteChange={handleFavoriteChange}
+                            />
+                        )}
+                    </>
                 )}
 
                 {activeMenu === 'setting' && (
