@@ -61,9 +61,8 @@ function About() {
     };
 
     return (
-        
-        <div className='flex flex-col min-h-screen bg-[#F5F5F5]'>
-            <nav className='flex items-center bg-[#F5F5F5] px-8 py-2 sticky top-0 z-50 shadow'>
+        <div className='flex flex-col min-h-screen bg-[#F5F5F5] w-full'>
+            <nav className='flex items-center bg-[#F5F5F5] px-8 py-2 sticky top-0 z-50 shadow w-full'>
                 <span className='w-70'>
                     <img src="/images/logoBlack.png" alt="Logo" className="h-20" />
                 </span>
@@ -117,44 +116,45 @@ function About() {
                     </div>
                 </div>
             </nav>
-            <div className={`transition-opacity duration-700 ease-in-out ${isMounted ? 'opacity-100' : 'opacity-0'}`}>
-                <div className='flex flex-col flex-1'>
+            <div className={`transition-opacity duration-700 ease-in-out ${isMounted ? 'opacity-100' : 'opacity-0'} w-full`}>
+                <div className='flex flex-col flex-1 w-full'>
                     <div
                         style={{
                             backgroundImage: `url('images/AboutBG.png')`,
                             backgroundSize: 'cover',
                             backgroundPosition: 'center',
-                            width: '100%',
+                            width: '100vw',
+                            maxWidth: '100%',
                             height: '25rem'
                         }}
-                        className='flex relative flex-col justify-center space-y-4 items-center'
+                        className='flex relative flex-col justify-center space-y-4 items-center w-full'
                     >
                         <div className='text-white font-bold text-6xl'>เกี่ยวกับเรา</div>
                         <p className='w-2xl text-center font-semibold text-white/70 text-xl'>พวกเราเชื่อมั่นว่าทุกคนควรสามารถลงทุนในหลักทรัพย์มากมายหลากหลายประเภท
                             ตามที่ต้องการได้อย่างสะดวกสบาย เพื่อไล่ตามความฝันและบรรลุเป้าหมายทางการเงินที่ได้ตั้งใจไว้</p>
-                        <div className='absolute top-5/6 w-[75%] h-100 shadow-lg rounded-lg overflow-hidden'>
+                        <div className='absolute top-5/6 left-1/2 -translate-x-1/2 w-[75vw] max-w-5xl h-auto overflow-hidden flex flex-col justify-center'>
                             <img
-                                className="w-full h-full object-cover rounded-lg"
+                                className="w-full h-full object-cover shadow-lg rounded-lg"
                                 src="images/PiFin.jpg"
                                 alt=""
                             />
+                            <div className='my-12 flex flex-col items-center justify-center w-full'>
+                                <div className='text-black font-bold text-center mb-6 text-5xl'>ข้อมูลบริษัท</div>
+                                <p className='text-black max-w-4xl text-center text-lg'>บริษัทหลักทรัพย์ พาย หรือ Pi Securities เป็นผู้ให้บริการด้านการลงทุนชั้นนำของประเทศไทยมาอย่างยาวนานกว่า 50 ปี เราเป็นสมาชิกหมายเลข 3 ของตลาดหลักทรัพย์แห่งประเทศไทย (SET) และอยู่ภายใต้การกำกับดูแลของสำนักงานคณะกรรมการกำกับหลักทรัพย์และตลาดหลักทรัพย์ (ก.ล.ต.)</p>
+                            </div>
                         </div>
                     </div>
-                    <div className='h-80 w-10'></div>
-                    <div className='my-12 flex flex-col items-center justify-center'>
-                        <div className='text-black font-bold text-center mb-6 text-5xl'>ข้อมูลบริษัท</div>
-                        <p className='text-black max-w-4xl text-center text-lg'>บริษัทหลักทรัพย์ พาย หรือ Pi Securities เป็นผู้ให้บริการด้านการลงทุนชั้นนำของประเทศไทยมาอย่างยาวนานกว่า 50 ปี เราเป็นสมาชิกหมายเลข 3 ของตลาดหลักทรัพย์แห่งประเทศไทย (SET) และอยู่ภายใต้การกำกับดูแลของสำนักงานคณะกรรมการกำกับหลักทรัพย์และตลาดหลักทรัพย์ (ก.ล.ต.)</p>
-                    </div>
+                    <div className='h-190 w-full'></div>
 
-                    <div className='h-120 w-full flex justify-between items-center p-8 bg-gradient-to-r from-[#01A478] to-[#003E2D]'>
-                        <div className='w-[50%] rounded-lg overflow-hidden flex justify-center'>
+                    <div className='h-120 w-full flex flex-col md:flex-row justify-between items-center p-8 bg-gradient-to-r from-[#01A478] to-[#003E2D]'>
+                        <div className='w-full md:w-[50%] rounded-lg overflow-hidden flex justify-center'>
                             <img
                                 className="w-[90%] h-full shadow-lg object-contain rounded-lg"
                                 src="images/4ppl.jpg"
                                 alt=""
                             />
                         </div>
-                        <div className='flex w-[50%] flex-col'>
+                        <div className='flex w-full md:w-[50%] flex-col'>
                             <div className='text-white text-5xl font-bold py-8'>วิสัยทัศน์</div>
                             <p className='text-white/90 font-medium max-w-2xl text-2xl py-10'>
                                 สร้างสังคมไทยให้เป็นสังคมทางการเงินที่แข็งแกร่ง และเท่าเทียมเพื่อให้ทุกคนสามารถเข้าถึงบริการทางการลงทุนได้ง่ายและมีประสิทธิภาพ สามารถไปถึงเป้าหมายความมั่งคั่งตามที่ได้วางแผนไว้
@@ -162,8 +162,8 @@ function About() {
                         </div>
                     </div>
 
-                    <div className='h-120 w-full flex justify-between items-center p-8 bg-gradient-to-r from-[#202431] to-[#636F97]'>
-                        <div className='flex w-[50%] flex-col'>
+                    <div className='h-120 w-full flex flex-col md:flex-row justify-between items-center p-8 bg-gradient-to-r from-[#202431] to-[#636F97]'>
+                        <div className='flex w-full md:w-[50%] flex-col'>
                             <div className='text-white text-5xl font-bold p-10'>พันธกิจ</div>
                             <p className='text-white/90 font-medium max-w-2xl text-2xl p-10'>
                                 เปิดโอกาสให้ทุกคนสามารถเข้าถึงการลงทุนใน
@@ -172,7 +172,7 @@ function About() {
                                 ง่ายจากผู้เชี่ยวชาญตัวจริงในอุตสาหกรรม
                             </p>
                         </div>
-                        <div className='w-[50%] h-100 rounded-lg overflow-hidden flex justify-center'>
+                        <div className='w-full md:w-[50%] h-100 rounded-lg overflow-hidden flex justify-center'>
                             <img
                                 className="w-125 shadow-lg object-cover rounded-lg"
                                 src="images/HandShake.png"
@@ -183,8 +183,8 @@ function About() {
 
                     <div className='h-120 w-full flex flex-col p-8'>
                         <div className='text-black m-10 font-bold text-5xl'>ค่านิมยมองค์กร</div>
-                        <div className='flex justify-between px-10 py-6'>
-                            <div className='flex flex-col w-sm'>
+                        <div className='flex flex-col md:flex-row justify-between px-10 py-6 w-full gap-y-10 gap-x-5'>
+                            <div className='flex flex-col w-full md:w-sm'>
                                 <div>
                                     <img src="/icons/Comfort.svg" alt="Icon" className="w-15 h-15" />
                                 </div>
@@ -194,7 +194,7 @@ function About() {
                                 </p>
                             </div>
 
-                            <div className='flex flex-col w-sm'>
+                            <div className='flex flex-col w-full md:w-sm'>
                                 <div>
                                     <img src="/icons/Precise.svg" alt="Icon" className="w-15 h-15" />
                                 </div>
@@ -205,7 +205,7 @@ function About() {
                                 </p>
                             </div>
 
-                            <div className='flex flex-col w-sm'>
+                            <div className='flex flex-col w-full md:w-sm'>
                                 <div>
                                     <img src="/icons/Divert.svg" alt="Icon" className="w-15 h-15" />
                                 </div>
@@ -371,7 +371,6 @@ function About() {
                 </div>
             )}
         </div>
-        
     )
 }
 

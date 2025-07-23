@@ -78,8 +78,9 @@
 import React from 'react';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
+import 'animate.css';
 
-function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick, price }) {
+function StockCard({ logo, stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick, price }) {
     const statusColor = {
         Buy: 'text-green-400',
         Hold: 'text-yellow-400',
@@ -101,7 +102,7 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggl
             <div className="flex-grow flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                     <div className="text-2xl font-bold text-white">{stockSymbol}</div>
-                    <div
+                    <button
                         onClick={(e) => {
                             e.stopPropagation();
                             onToggleFavorite();
@@ -113,7 +114,7 @@ function StockCard({ stockSymbol, status, reason, timeStamp, isFavorite, onToggl
                         ) : (
                             <StarOutline className="w-6 h-6 text-gray-500" />
                         )}
-                    </div>
+                    </button>
                 </div>
 
                 <div className="text-base text-gray-300">

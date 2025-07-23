@@ -4,83 +4,8 @@ import StockCard from './StockCard';
 import StockDetail from './StockDetail';
 import 'animate.css';
 
-function StockSignal({ onSwitchChange, stock }) {
+function StockSignal({ onSwitchChange, stock, stockList, onFavoriteChange }) {
     // console.log("StockSignal component rendered with stock:", stock);
-
-    const stockList = [
-        {
-            stockSymbol: 'PTT',
-            companyName: 'PTT Public Company Limited',
-            status: 'Buy',
-            reason: 'ราคา Break EMA20 + ปริมาณซื้อเพิ่มสูง',
-            timeStamp: "2025-07-05T15:24:44.540Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'CPALL',
-            companyName: 'CP All Public Company Limited',
-            status: 'Hold',
-            reason: 'ราคาแกว่งตัวในกรอบ ยังไม่ชัดเจน',
-            timeStamp: "2025-07-01T06:27:46.180Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'AOT',
-            companyName: 'Airports of Thailand Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายต่อเนื่องและต่ำกว่า EMA20',
-            timeStamp: "2025-07-10T22:39:12.318Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'SCB',
-            companyName: 'The Siam Commercial Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'สัญญาณ MACD ตัดขึ้นเหนือเส้นศูนย์',
-            timeStamp: "2025-07-07T08:09:20.069Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'ADVANC',
-            companyName: 'Advanced Info Service Public Company Limited',
-            status: 'Hold',
-            reason: 'ยังไม่มีแนวโน้มที่ชัดเจนจาก RSI',
-            timeStamp: "2025-07-13T14:19:51.526Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'GULF',
-            companyName: 'Gulf Energy Development Public Company Limited',
-            status: 'Sell',
-            reason: 'ราคาลงต่อเนื่องหลายวันติดต่อกัน',
-            timeStamp: "2025-07-03T23:02:54.200Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'BBL',
-            companyName: 'Bangkok Bank Public Company Limited',
-            status: 'Buy',
-            reason: 'เกิด Golden Cross บนกราฟรายวัน',
-            timeStamp: "2025-07-12T05:54:52.304Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'DELTA',
-            companyName: 'Delta Electronics (Thailand) Public Company Limited',
-            status: 'Hold',
-            reason: 'Sideway แคบ รอเบรกแนวต้าน',
-            timeStamp: "2025-07-10T09:48:46.328Z",
-            isFavorite: true,
-        },
-        {
-            stockSymbol: 'TRUE',
-            companyName: 'True Corporation Public Company Limited',
-            status: 'Sell',
-            reason: 'มีแรงขายสูง RSI ต่ำกว่า 30',
-            timeStamp: "2025-07-07T18:12:12.399Z",
-            isFavorite: true,
-        },
-    ]
 
     const statusCounts = stockList.reduce(
         (acc, item) => {
@@ -96,9 +21,9 @@ function StockSignal({ onSwitchChange, stock }) {
     ];
 
     const sortOptions = [
-        { id: 1, name: 'ชื่อ' },
-        { id: 2, name: 'สถานะ' },
-        { id: 3, name: 'ล่าสุด' },
+        { id: 1, name: 'Symbol' },
+        { id: 2, name: 'Signal' },
+        { id: 3, name: 'อัพเดทล่าสุด' },
     ];
 
     const [open, setOpen] = useState(false);
@@ -113,7 +38,12 @@ function StockSignal({ onSwitchChange, stock }) {
         setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     };
 
-    const [sortedStock, setSortedStock] = useState(stockList);
+    // const [sortedStock, setSortedStock] = useState(stockList);
+    const [sortedStock, setSortedStock] = useState(() => {
+        // โหลดจาก localStorage ถ้ามี ไม่งั้นเป็น array ว่าง
+        const saved = localStorage.getItem('FavoriteStocks');
+        return saved ? JSON.parse(saved) : [];
+    });
 
     const ref = useRef();
     const sortRef = useRef();
@@ -133,12 +63,12 @@ function StockSignal({ onSwitchChange, stock }) {
     }, []);
 
     useEffect(() => {
-        const sorted = [...stockList].sort((a, b) => {
+        const sorted = [...sortedStock].sort((a, b) => {
             let compareValue = 0;
 
             switch (sortSelected.id) {
                 case 1: // companyName
-                    compareValue = a.companyName.localeCompare(b.companyName);
+                    compareValue = a.stockSymbol.localeCompare(b.stockSymbol);
                     break;
                 case 2: // status
                     compareValue = a.status.localeCompare(b.status);
@@ -155,6 +85,76 @@ function StockSignal({ onSwitchChange, stock }) {
 
         setSortedStock(sorted);
     }, [sortSelected, sortDirection]);
+
+    const handleToggleFavorite = (symbol) => {
+        setSortedStock(prevStocks => {
+            // ลบหุ้นที่ติ๊กดาวออกจาก favorite
+            const updatedFavoriteStocks = prevStocks.filter(s => s.stockSymbol !== symbol);
+
+            // อัปเดต localStorage ของ FavoriteStocks
+            localStorage.setItem('FavoriteStocks', JSON.stringify(updatedFavoriteStocks));
+
+            // อัปเดต localStorage ของ SET50Stocks
+            const set50StocksRaw = localStorage.getItem('SET50Stocks');
+            if (set50StocksRaw) {
+                try {
+                    const set50Stocks = JSON.parse(set50StocksRaw);
+
+                    // อัปเดต isFavorite ของ SET50Stocks ให้ตรงกับ favorite จริงๆ
+                    const updatedSet50Stocks = set50Stocks.map(stock => ({
+                        ...stock,
+                        isFavorite: updatedFavoriteStocks.some(fav => fav.stockSymbol === stock.stockSymbol),
+                        favoriteAt: updatedFavoriteStocks.find(fav => fav.stockSymbol === stock.stockSymbol)?.favoriteAt || null
+                    }));
+
+                    localStorage.setItem('SET50Stocks', JSON.stringify(updatedSet50Stocks));
+                } catch (e) {
+                    console.error('Failed to parse SET50Stocks from localStorage', e);
+                }
+            }
+
+            // ✅ แจ้ง parent ว่า favorite stocks ถูกอัปเดตแล้ว
+            onFavoriteChange(updatedFavoriteStocks);
+
+            // ✅ return ค่าใหม่ให้ state (React UI จะ render ใหม่)
+            return updatedFavoriteStocks;
+        });
+    };
+
+
+
+    // useEffect ซิงก์ FavoriteStocks ใน localStorage ทุกครั้งที่ stocks เปลี่ยน
+    // useEffect(() => {
+    //     // 1️⃣ ดึง SET50Stocks เดิมออกมา
+    //     const storedStocks = JSON.parse(localStorage.getItem('SET50Stocks')) || [];
+
+    //     // 2️⃣ อัปเดตหุ้นตามสถานะใน sortedStock
+    //     const updatedStocks = storedStocks.map(existingStock => {
+    //         const updated = sortedStock.find(s => s.stockSymbol === existingStock.stockSymbol);
+
+    //         if (updated) {
+    //             // เปรียบเทียบเฉพาะ isFavorite (หรือ field อื่น ๆ ตามต้องการ)
+    //             if (existingStock.isFavorite !== updated.isFavorite) {
+    //                 return {
+    //                     ...existingStock,
+    //                     isFavorite: updated.isFavorite,
+    //                     favoriteAt: updated.favoriteAt  // ถ้ามี
+    //                 };
+    //             }
+    //         }
+
+    //         return existingStock;
+    //     });
+
+    //     // 3️⃣ บันทึก stocks ที่อัปเดตแล้วกลับเข้า localStorage
+    //     localStorage.setItem('SET50Stocks', JSON.stringify(updatedStocks));
+
+    //     // 4️⃣ สร้าง FavoriteStocks ใหม่จาก updatedStocks
+    //     // const favoriteOnly = updatedStocks.filter(s => s.isFavorite);
+    //     // localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+    // }, [sortedStock]);
+
 
     return (
         <div className=' px-4'>
@@ -196,7 +196,7 @@ function StockSignal({ onSwitchChange, stock }) {
                             </div>
                             <div className="flex items-center self-end gap-4 ">
                                 {/* หุ้นยอดนิยม */}
-                                <div className="relative w-60" ref={ref}>
+                                {/* <div className="relative w-60" ref={ref}>
                                     <div
                                         className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
                                         onClick={() => setOpen(!open)}
@@ -234,7 +234,7 @@ function StockSignal({ onSwitchChange, stock }) {
                                             </div>
                                         ))}
                                     </div>
-                                </div>
+                                </div> */}
 
                                 <div className="relative w-60" ref={sortRef}>
                                     <div
@@ -315,16 +315,12 @@ function StockSignal({ onSwitchChange, stock }) {
                         <div className="mt-4">
                             <div className="grid grid-cols-1 my-1 md:grid-cols-3 gap-4 mt-2">
                                 {sortedStock.map((stock, index) => (
-                                    <div key={index} onClick={() => {
-                                        setSwitchState(!switchState);
-                                        setStockDetail(stock);
-                                    }}
-                                        className='cursor-pointer animate__animated animate__fadeInUp'>
+                                    <div key={index} className="">
                                         <StockCard
                                             stockSymbol={stock.stockSymbol}
+                                            price={stock.stockPrice}
                                             status={stock.status}
                                             reason={stock.reason}
-                                            isFavorite={stock.isFavorite}
                                             timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
                                                 day: '2-digit',
                                                 month: '2-digit',
@@ -333,6 +329,12 @@ function StockSignal({ onSwitchChange, stock }) {
                                                 minute: '2-digit',
                                                 hour12: true,
                                             })}`}
+                                            isFavorite={stock.isFavorite}
+                                            onToggleFavorite={() => handleToggleFavorite(stock.stockSymbol)}
+                                            onClick={() => {
+                                                setSwitchState(!switchState);
+                                                setStockDetail(stock);
+                                            }}
                                         />
                                     </div>
                                 ))}

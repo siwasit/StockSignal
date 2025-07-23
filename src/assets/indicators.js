@@ -119,3 +119,30 @@ export const calculateMACD = (data, fastPeriod = 12, slowPeriod = 26, signalPeri
         histogram: hist,
     };
 };
+
+export const calculateOBV = (candles) => {
+    if (!candles || candles.length === 0) return [];
+
+    let obv = 0;
+    const result = [];
+
+    for (let i = 1; i < candles.length; i++) {
+        const prevClose = candles[i - 1].close;
+        const currentClose = candles[i].close;
+        const volume = candles[i].volume || 0;
+
+        if (currentClose > prevClose) {
+            obv += volume;
+        } else if (currentClose < prevClose) {
+            obv -= volume;
+        }
+        // Same price = OBV ไม่เปลี่ยน
+
+        result.push({
+            time: candles[i].time,
+            value: obv
+        });
+    }
+
+    return result;
+};
