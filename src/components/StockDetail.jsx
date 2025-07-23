@@ -7,13 +7,35 @@ import { ExternalLink, ChevronRight } from 'lucide-react';
 import NewsCard from './NewsCard';
 import { motion } from 'framer-motion';
 
+function ChartLegend({ showEMA }) {
+    if (!(showEMA)) {
+        return null; // ไม่แสดงอะไรถ้าไม่มีตัวไหนเปิด
+    }
+
+    return (
+        <div
+            className="absolute top-2 left-2 bg-black bg-opacity-60 rounded-md px-3 py-1 flex space-x-4 text-white text-sm select-none z-10"
+            style={{ backdropFilter: 'blur(4px)' }} // ใส่เบลอพื้นหลังสวยๆ (optional)
+        >
+            {showEMA && (
+                <div className="flex items-center space-x-1">
+                    <div className="w-4 h-2 rounded" style={{ backgroundColor: 'orange' }} />
+                    <span>EMA</span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+
 function StockDetail({ stock }) {
 
     // console.log("StockDetail component rendered with stock:", stock);
     const [stockDetail, setStockDetail] = useState(stock);
     const [scaleActive, setScaleActive] = useState('1D');
     const options = ['1D', '1W', '1M', '1Y'];
-    const [sampleData, setSampleData] = useState(generateCandlestickData('2023-01-01', 540));
+    // const [sampleData, setSampleData] = useState(generateCandlestickData('2023-01-01', 540));
+    const [sampleData, setSampleData] = useState();
     const [showNoData, setShowNoData] = useState(false);
     const [showMACDNoData, setShowMACDNoData] = useState(false);
     const [indicators, setIndicators] = useState({
@@ -27,6 +49,7 @@ function StockDetail({ stock }) {
     const chartContainerRef = useRef();
     const rsiRef = useRef();
     const macdRef = useRef();
+    const obvRef = useRef();
 
     const containerVariants = {
         hidden: { opacity: 0, y: 20 },
@@ -90,10 +113,10 @@ function StockDetail({ stock }) {
     const filterDataByPeriod = (data, period) => {
         if (!data || data.length === 0) return [];
 
-        // สมมติ data เป็น array ของ { time: string|number, ... }
-        // แปลงข้อมูล time สุดท้ายเป็น Date object
         const lastTime = data[data.length - 1].time;
-        const now = new Date(lastTime);
+        const now = typeof lastTime === 'number'
+            ? new Date(lastTime * 1000)
+            : new Date(lastTime);
 
         let fromDate;
         switch (period) {
@@ -120,17 +143,120 @@ function StockDetail({ stock }) {
         }
 
         return data.filter(datum => {
-            const t = new Date(datum.time);
+            const t = typeof datum.time === 'number'
+                ? new Date(datum.time * 1000)
+                : new Date(datum.time);
+
             return t >= fromDate && t <= now;
         });
     };
 
 
+
+    // useEffect(() => {
+    //     const data = generateCandlestickData('2023-01-01', 540);
+    //     // const endpoint = `http://127.0.0.1:3007/getHistData/${encodeURIComponent(stock.stockSymbol)}`;
+    //     // const data = await fetchCandlestickDataFromAPI(endpoint);
+    //     setSampleData(data);
+    //     console.log(data)
+    // }, []);
+    const didFetch = useRef(false);
+    const [priceNow, setPriceNow] = useState(0);
+    const [priceChangePercent, setPriceChangePercent] = useState('0.00');
+    const [priceColor, setPriceColor] = useState('text-[#41DC8E]');
+    const [pricePrefix, setPricePrefix] = useState('+');
+    const [companyData, setCompanyData] = useState(null);
+    const [widthState, setWidth] = useState();
+    const [isLoading, setIsLoading] = useState(false);
+
     useEffect(() => {
-        const data = generateCandlestickData('2023-01-01', 540);
-        setSampleData(data);
-        // console.log(data)
-    }, []);
+        if (didFetch.current) return;
+        didFetch.current = true;
+
+        async function loadCompanyData(retryCount = 3) {
+            setIsLoading(true);
+            setCompanyData(null); // เคลียร์ค่าเดิมก่อนเริ่มดึงใหม่
+
+            for (let attempt = 1; attempt <= retryCount; attempt++) {
+                try {
+                    const response = await fetch(`http://127.0.0.1:3007/CompanyData/${encodeURIComponent(stock.stockSymbol)}`);
+                    if (!response.ok) throw new Error('Failed to fetch company data');
+
+                    const data = await response.json();
+                    setCompanyData(data);
+
+                    if (data) {
+                        setIsLoading(false);
+                        console.log('สำเร็จรอบที่', attempt, data);
+                        return; // มีข้อมูลแล้ว ไม่ต้อง retry
+                    }
+
+                } catch (error) {
+                    console.error(`Attempt ${attempt} failed:`, error);
+                }
+
+                // รอ 1 วินาทีก่อนลองใหม่
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // ถ้าไม่มีข้อมูลแม้จะลองครบแล้ว
+            setIsLoading(false);
+            console.warn('โหลดข้อมูลไม่สำเร็จหลังจากลองครบทุกครั้ง');
+        }
+
+
+        async function fetchData() {
+            try {
+                const endpoint = `http://127.0.0.1:3007/getHistData/${encodeURIComponent(stock.stockSymbol)}`;
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                const rawData = await response.json();
+
+                const transformedData = rawData.map(item => ({
+                    time: Math.floor(new Date(item.datetime).getTime() / 1000),
+                    open: item.open,
+                    high: item.high,
+                    low: item.low,
+                    close: item.close,
+                    volume: item.volume,
+                }));
+
+                setSampleData(transformedData);
+
+                // คำนวณราคาล่าสุดและเปลี่ยนแปลง
+                const latest = transformedData[transformedData.length - 1];
+                const previous = transformedData[transformedData.length - 2];
+
+                const nowClose = latest?.close || 0;
+                const prevClose = previous?.close || 0;
+
+                const changePercent = prevClose
+                    ? (((nowClose - prevClose) / prevClose) * 100).toFixed(2)
+                    : '0.00';
+
+                setPriceNow(nowClose);
+                setPriceChangePercent(changePercent);
+
+                if (parseFloat(changePercent) >= 0) {
+                    setPriceColor('text-[#41DC8E]');
+                    setPricePrefix('+');
+                } else {
+                    setPriceColor('text-[#EF5350]');
+                    setPricePrefix('');
+                }
+            } catch (error) {
+                console.error('Error fetching candlestick data:', error);
+                setSampleData([]);
+                setPriceNow(0);
+                setPriceChangePercent('0.00');
+                setPriceColor('text-[#41DC8E]');
+                setPricePrefix('+');
+            }
+        }
+
+        fetchData();
+        loadCompanyData();
+    }, []);  // dependency array ว่าง ทำให้รันแค่ครั้งเดียว
 
     useEffect(() => {
         const currentLocale = navigator.language || 'en-US';
@@ -138,39 +264,41 @@ function StockDetail({ stock }) {
 
         let syncInProgress = false;
         function syncCharts(sourceChart, charts) {
-            // console.log("Sync from", sourceChart, "to", charts);
             if (syncInProgress) return;
-            // console.log("Sync from", sourceChart, "to", charts, 'pass');
             syncInProgress = true;
 
             const sourceRange = sourceChart.timeScale().getVisibleLogicalRange();
             if (!sourceRange) {
                 syncInProgress = false;
-                return; // ถ้าไม่มี range ไม่ต้อง sync
+                return;
+            }
+
+            // เพิ่มการตรวจสอบช่วงเวลาสำหรับ 1M โดยเฉพาะ
+            if (scaleActive === '1M') {
+                sourceChart.timeScale().fitContent();
             }
 
             for (const chart of charts) {
-                if (chart !== sourceChart) {
-                    // ตรวจสอบว่าชาร์ตยังไม่ถูกลบหรือ null
-                    if (chart && chart.timeScale) {
-                        try {
-                            chart.timeScale().setVisibleLogicalRange(sourceRange);
-                        } catch (e) {
-                            // กัน error กรณีกราฟยังไม่พร้อม
-                            console.warn('syncCharts: setVisibleLogicalRange error', e);
+                if (chart !== sourceChart && chart && chart.timeScale) {
+                    try {
+                        chart.timeScale().setVisibleLogicalRange(sourceRange);
+                        if (scaleActive === '1M') {
+                            chart.timeScale().fitContent();
                         }
+                    } catch (e) {
+                        console.warn('syncCharts error', e);
                     }
                 }
             }
             syncInProgress = false;
         }
 
-
         // --- Main Chart ---
         const mainChart = createChart(chartContainerRef.current, {
-            width: 900,
+            width: chartContainerRef.current.clientWidth,
             height: 300,
             layout: {
+                attributionLogo: false,
                 background: { color: '#202431' },
                 textColor: '#FFFFFF',
             },
@@ -194,13 +322,6 @@ function StockDetail({ stock }) {
         }).format;
 
         mainChart.applyOptions({
-            timeScale: {
-                handleScroll: false,  // ปิดเลื่อนกราฟ
-                handleScale: false,   // ปิดซูมกราฟ
-            },
-            localization: {
-                priceFormatter: myPriceFormatter,
-            },
             rightPriceScale: {
                 scaleMargins: {
                     top: 0.1,
@@ -208,8 +329,15 @@ function StockDetail({ stock }) {
                 },
                 borderVisible: false,
             },
+            timeScale: {
+                handleScroll: false,
+                handleScale: false,
+            },
+            handleScroll: false,
+            handleScale: false,
         });
 
+        // CANDLESTICK SERIES
         const candleSeries = mainChart.addSeries(CandlestickSeries, {
             upColor: '#26a69a',
             downColor: '#ef5350',
@@ -217,6 +345,10 @@ function StockDetail({ stock }) {
             borderDownColor: '#ef5350',
             wickUpColor: '#26a69a',
             wickDownColor: '#ef5350',
+            priceFormat: {
+                type: 'custom',
+                formatter: (price) => Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(price),
+            }
         });
         candleSeries.setData(filtered);
 
@@ -233,7 +365,7 @@ function StockDetail({ stock }) {
 
         // Volume
         const volumeSeries = mainChart.addSeries(HistogramSeries, {
-            color: '#8884d8',
+            // color: '#8884d8',
             priceFormat: { type: 'volume' },
             priceScaleId: 'volume',
             scaleMargins: {
@@ -256,64 +388,136 @@ function StockDetail({ stock }) {
             volumeSeries.setData([]); // ซ่อน Volume histogram
         }
         // OBV Line Series บน Main Chart
-        const obvSeries = mainChart.addSeries(LineSeries, {
-            color: '#A084DC',
-            lineWidth: 2,
-            priceScaleId: 'obv',  // ใช้ Price Scale แยก
-        });
+        // const obvSeries = mainChart.addSeries(LineSeries, {
+        //     color: '#A084DC',
+        //     lineWidth: 2,
+        //     priceScaleId: 'obv',  // ใช้ Price Scale แยก
+        // });
 
-        // ปรับ obv priceScale options (ลบ timeScale ออก)
-        mainChart.priceScale('obv').applyOptions({
-            scaleMargins: {
-                top: 0.85,
-                bottom: 0,
-            },
-            borderVisible: false,
-        });
+        // // ปรับ obv priceScale options (ลบ timeScale ออก)
+        // mainChart.priceScale('obv').applyOptions({
+        //     scaleMargins: {
+        //         top: 0.85,
+        //         bottom: 0,
+        //     },
+        //     borderVisible: false,
+        // });
 
-        // ตั้งค่า OBV data
-        if (indicators.obv) {
-            obvSeries.setData(calculateOBV(filtered));
-        } else {
-            obvSeries.setData([]);  // ซ่อนถ้าไม่เลือก
+        // // ตั้งค่า OBV data
+        // if (indicators.obv) {
+        //     obvSeries.setData(calculateOBV(filtered));
+        // } else {
+        //     obvSeries.setData([]);  // ซ่อนถ้าไม่เลือก
+        // }
+        let obvChart;
+        if (obvRef.current) {
+            obvChart = createChart(obvRef.current, {
+                width: obvRef.current.clientWidth,
+                height: 100,
+                layout: {
+                    attributionLogo: false,
+                    background: { color: '#202431' },
+                    textColor: '#FFFFFF',
+                },
+                timeScale: {
+                    visible: true,
+                    borderColor: '#3A3F55',
+                    handleScroll: false,
+                    handleScale: false,
+                },
+                grid: {
+                    vertLines: { color: '#3A3F55' },
+                    horzLines: { color: '#3A3F55' },
+                },
+                rightPriceScale: {
+                    borderVisible: false,
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.1,
+                    },
+                    autoScale: true,
+                },
+                handleScroll: false,
+                handleScale: false,
+            });
+
+            const obvSeries = obvChart.addSeries(LineSeries, {
+                color: '#A084DC',
+                lineWidth: 2,
+            });
+
+            if (indicators.obv && filtered.length > 0) {
+                obvSeries.setData(calculateOBV(filtered));
+                obvChart.timeScale().fitContent();
+            } else {
+                obvSeries.setData([]);
+            }
         }
+
 
         // --- RSI Chart ---
         let rsiChart;
         if (rsiRef.current) {
             rsiChart = createChart(rsiRef.current, {
-                width: 900,
+                width: rsiRef.current.clientWidth,
                 height: 100,
-                layout: { background: { color: '#202431' }, textColor: '#FFFFFF' },
-                timeScale: { visible: false },
+                layout: { attributionLogo: false, background: { color: '#202431' }, textColor: '#FFFFFF' },
+                timeScale: { visible: false, handleScroll: false, handleScale: false },
                 grid: {
                     vertLines: { color: '#3A3F55' },
                     horzLines: { color: '#3A3F55' },
                 },
+                rightPriceScale: {
+                    borderVisible: false,
+                    scaleMargins: {
+                        top: 0,
+                        bottom: 0,
+                    },
+                    autoScale: true, // ให้ autoscale เต็มกราฟ
+                },
+                handleScroll: false,
+                handleScale: false,
             });
 
             const rsiSeries = rsiChart.addSeries(LineSeries, { color: '#00BCD4' });
+
             if (indicators.rsi && filtered.length > 14) {
                 setShowNoData(false);
-                rsiSeries.setData(calculateRSI(filtered));
+
+                const rsiData = calculateRSI(filtered);
+
+                rsiSeries.setData(rsiData);
+
+                rsiChart.priceScale('right').applyOptions({
+                    autoScale: false,
+                    minValue: 0,
+                    maxValue: 100,
+                });
+
             } else {
                 setShowNoData(true);
                 rsiSeries.setData([]);
             }
+
         }
 
         // --- MACD Chart ---
         let macdChart;
         if (macdRef.current) {
             macdChart = createChart(macdRef.current, {
-                width: 900,
+                width: macdRef.current.clientWidth,
                 height: 120,
-                layout: { background: { color: '#202431' }, textColor: '#fff' },
+                layout: { attributionLogo: false, background: { color: '#202431' }, textColor: '#fff' },
                 grid: {
                     vertLines: { color: '#3A3F55' },
                     horzLines: { color: '#3A3F55' },
                 },
-                timeScale: { visible: false },
+                timeScale: {
+                    handleScroll: false,
+                    handleScale: false,
+                },
+                handleScroll: false, // ถ้ารองรับ (ดู docs)
+                handleScale: false,
             });
 
             const macdLineSeries = macdChart.addSeries(LineSeries, { color: '#00BCD4', lineWidth: 1 });
@@ -337,10 +541,6 @@ function StockDetail({ stock }) {
                 histogramSeries.setData([]);
             }
         }
-
-        mainChart.timeScale().fitContent();
-        rsiChart?.timeScale().fitContent();
-        macdChart?.timeScale().fitContent();
 
         const macdLineSeries = macdChart.addSeries(LineSeries, { color: '#00BCD4', lineWidth: 1 });
         const signalLineSeries = macdChart.addSeries(LineSeries, { color: '#FFA726', lineWidth: 1 });
@@ -374,14 +574,54 @@ function StockDetail({ stock }) {
             syncCharts(source, targets);
         }
 
+        // ย้ายการเรียก fitContent ไปหลังจากการตั้งค่าข้อมูลทั้งหมด
+        mainChart.timeScale().fitContent();
+        if (rsiChart) rsiChart.timeScale().fitContent();
+        if (macdChart) macdChart.timeScale().fitContent();
+        if (obvChart) obvChart.timeScale().fitContent();
+
+        // เพิ่มการตรวจสอบเฉพาะสำหรับ 1M
+        if (scaleActive === '1M') {
+            mainChart.timeScale().fitContent();
+            if (rsiChart) rsiChart.timeScale().fitContent();
+            if (macdChart) macdChart.timeScale().fitContent();
+            if (obvChart) obvChart.timeScale().fitContent();
+        }
+
+        // const resizeObserver = new ResizeObserver(entries => {
+        //     for (let entry of entries) {
+        //         const newWidth = entry.contentRect.width;
+        //         setWidth(newWidth);
+        //         chartContainerRef.current.resize(newWidth, 100);
+        //     }
+        // });
+
+        // resizeObserver.observe(chartContainerRef.current);
+
         // Cleanup
         return () => {
+            // resizeObserver.disconnect();
             mainChart.remove();
             rsiChart?.remove();
             macdChart.remove();
+            obvChart.remove();
         };
     }, [scaleActive, sampleData, indicators]);
 
+    const formatEstablishedDate = (dateStr) => {
+        if (!dateStr) return "-";
+
+        const [day, month, year] = dateStr.split("/");
+
+        const dateObj = new Date(`${year}-${month}-${day}`);  // yyyy-mm-dd
+
+        return dateObj.toLocaleDateString('th-TH', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            calendar: 'gregory',    // ใช้ปฏิทินสากล (ค.ศ.)
+        });
+    };
 
     return (
         <motion.div
@@ -433,8 +673,10 @@ function StockDetail({ stock }) {
                     <div className='flex flex-col w-[75%] h-full pr-4 border-r-2 border-[#868686]'>
                         <div className="flex space-y-1 justify-between my-3 text-gray-100">
                             <div className="flex space-x-4 items-center font-semibold text-xl">
-                                <div>100.00฿</div>
-                                <div className="text-[#41DC8E]">+1.11%</div>
+                                <div>{priceNow.toFixed(2)}฿</div>
+                                <div className={priceColor}>
+                                    {pricePrefix}{priceChangePercent}%
+                                </div>
                             </div>
 
                             <div className="flex flex-wrap gap-4 text-white">
@@ -485,8 +727,16 @@ function StockDetail({ stock }) {
                                 </div>
                             </div>
                         </div>
-                        <div ref={chartContainerRef} className="w-full flex justify-center  h-3/5" />
+                        <div className="relative w-full flex justify-center h-3/5">
+                            <ChartLegend
+                                showEMA={indicators.ema}
+                            />
+                            <div ref={chartContainerRef} className="w-full" />
+                        </div>
                         <div className={`relative w-full h-1/5 ${!indicators.rsi ? 'hidden' : ''}`}>
+                            <div className="absolute top-1 left-2 text-white text-xs font-semibold select-none z-20">
+                                Relative Strength Index (RSI)
+                            </div>
                             <div ref={rsiRef} className="w-full flex justify-center h-full" />
                             {showNoData && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-[#202431]/80 text-white text-sm opacity-50 z-10">
@@ -495,8 +745,22 @@ function StockDetail({ stock }) {
                             )}
                         </div>
 
+                        <div className={`relative w-full h-1/5 ${!indicators.obv ? 'hidden' : ''}`}>
+                            <div className="absolute top-1 left-2 text-white text-xs font-semibold select-none z-20">
+                                On-Balance Volume (OBV)
+                            </div>
+                            <div ref={obvRef} className="w-full flex justify-center h-full" />
+                            {!(indicators.obv) && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-[#202431]/80 text-white text-sm opacity-50 z-10">
+                                    ข้อมูลไม่เพียงพอสำหรับคำนวณ OBV
+                                </div>
+                            )}
+                        </div>
 
                         <div className={`relative w-full h-1/5 ${!indicators.macd ? 'hidden' : ''}`}>
+                            <div className="absolute top-1 left-2 text-white text-xs font-semibold select-none z-20">
+                                Moving Average Convergence Divergence (MACD)
+                            </div>
                             <div ref={macdRef} className="w-full flex justify-center h-full" />
                             {showMACDNoData && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-[#202431]/80 text-white text-sm opacity-50 z-10">
@@ -505,40 +769,108 @@ function StockDetail({ stock }) {
                             )}
                         </div>
 
-                        <div className='text-end px-3 text-[#868686]'>ตัวชี้วัด: RSI 68 | MACD +1.2 | EMA20</div>
+                        {/* <div className='text-end px-3 text-[#868686]'>ตัวชี้วัด: RSI 68 | MACD +1.2 | EMA20</div> */}
                         <div className='flex flex-col'>
-                            <div className='text-2xl text-white font-bold my-4'>ข้อมูล{stockDetail.ThaiCompanyName}</div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>มูลค่าตามราคาตลาด</div>
-                                    <div className='text-md font-thin'>605.06 B THB</div>
+                            <div className='text-2xl text-white font-bold my-4'>ข้อมูล{stockDetail.ThaiCompanyName} ({stockDetail.stockSymbol})</div>
+
+                            {isLoading ? (
+                                <div className=" my-4 flex flex-col items-center justify-center text-gray-100">
+                                    <img
+                                        src="/icons/OliveSpinner.svg"
+                                        alt="Loading..."
+                                        className="w-15 h-15 animate-spin mb-2"
+                                    />
+                                    <div className="text-lg font-semibold text-gray-300">
+                                        กำลังโหลดข้อมูล&nbsp;{stock.stockSymbol}
+                                    </div>
+                                    {/* <div className="mt-1 text-xl font-bold text-green-400">
+                                    Loaded: {AllStock.length} / {SET50.length}
+                                </div> */}
                                 </div>
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>อัตราผลตอบแทนจากเงินปันผล</div>
-                                    <div className='text-md font-thin'>-</div>
-                                </div>
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>อัตราส่วนราคาต่อกำไรสุทธิ (12 เดือนล่าสุด)</div>
-                                    <div className='text-md font-thin'>-</div>
-                                </div>
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>ผู้บริหารสูงสุด</div>
-                                    <div className='text-md font-thin'>Sarath Ratanavadi</div>
-                                </div>
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>ถูกก่อตั้ง</div>
-                                    <div className='text-md font-thin'>-</div>
-                                </div>
-                                <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                    <div className='text-lg font-medium'>เว็บไซต์</div>
-                                    <div className='flex items-center gap-2 group cursor-pointer'>
-                                        <div className='text-md font-thin text-white group-hover:text-[#6870FA] transition-colors duration-200'>
-                                            gulf.co.th
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
+                                    {/* มูลค่าตามราคาตลาด */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium border-b pb-1 border-gray-500">มูลค่าตามราคาตลาด</div>
+                                        <div className="text-md ">
+                                            {companyData?.highlight_data?.marketCap
+                                                ? (companyData.highlight_data.marketCap / 1e9).toFixed(2) + " B THB"
+                                                : "-"}
                                         </div>
-                                        <ExternalLink className="w-4 h-4 text-white opacity-60 group-hover:text-[#6870FA] transition-colors duration-200" />
+                                    </div>
+
+                                    {/* อัตราผลตอบแทนจากเงินปันผล */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">อัตราผลตอบแทนจากเงินปันผล</div>
+                                        <div className="text-md ">
+                                            {companyData?.highlight_data?.dividendYield12M
+                                                ? companyData.highlight_data.dividendYield12M.toFixed(2) + " %"
+                                                : "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* อัตราส่วนราคาต่อกำไรสุทธิ (12 เดือนล่าสุด) */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">อัตราส่วนราคาต่อกำไรสุทธิ</div>
+                                        <div className="text-md ">
+                                            {companyData?.highlight_data?.peRatio
+                                                ? companyData.highlight_data.peRatio.toFixed(2)
+                                                : "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* ผู้บริหารสูงสุด */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">ผู้บริหาร</div>
+                                        <div className="text-md font-thin flex flex-col gap-1">
+                                            {companyData?.board_of_director
+                                                ? companyData.board_of_director
+                                                    .filter(member =>
+                                                        member.positions.some(position =>
+                                                            position.includes("ประธาน")
+                                                        )
+                                                    )
+                                                    .map((member, index) => (
+                                                        <div key={index} className="flex flex-col">
+                                                            <span className="font-semibold text-white">{member.name}</span>
+                                                            <span className="text-[#C0C0C0] text-sm">
+                                                                {member.positions
+                                                                    .filter(position => position.includes("ประธาน"))
+                                                                    .join(", ")}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                : <div>-</div>}
+                                        </div>
+                                    </div>
+
+                                    {/* ถูกก่อตั้ง */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">ถูกก่อตั้ง</div>
+                                        <div className="text-md font-thin">
+                                            {formatEstablishedDate(companyData?.profile_data?.establishedDate)}
+                                        </div>
+                                    </div>
+
+                                    {/* เว็บไซต์ */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">เว็บไซต์</div>
+                                        <div>
+                                            <a
+                                                href={companyData?.profile_data?.url || "#"}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 group cursor-pointer text-md font-thin text-white group-hover:text-[#6870FA] transition-colors duration-200"
+                                            >
+                                                {companyData?.profile_data?.url
+                                                    ? companyData.profile_data.url.replace(/^https?:\/\//, "")
+                                                    : "-"}
+                                                <ExternalLink className="w-4 h-4 text-white opacity-60 group-hover:text-[#6870FA] transition-colors duration-200" />
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
                     <div className='pl-4 w-[25%] flex flex-col'>
@@ -548,37 +880,46 @@ function StockDetail({ stock }) {
                             <div className="w-0 h-0 border-l-8 border-r-8 border-b-10 border-transparent border-b-white"></div>
                         </div>
                         <div className='flex flex-col my-2'>
-                            <div className='text-[#868686] text-lg font-medium'>เหตุผล</div>
+                            <div className='text-[#868686] text-lg font-medium'>คำอธิบาย Signal</div>
                             <div className="text-white flex items-center gap-2">
-                                <p className="text-[#F6B73C] m-0">Break EMA20</p>
-                                <span>+ Volume เพิ่ม</span>
+                                {/* <p className="text-[#F6B73C] m-0">ยังไม่ทำครับ</p> */}
+                                <p className="text-[#FF6B6B] m-0">ยังไม่ทำครับ</p>
+                                {/* <span>+ Volume เพิ่ม</span> */}
                             </div>
                         </div>
                         <hr className="my-2 border-t border-[#868686]" />
                         <div className='text-2xl text-white font-semibold my-2'>ประวัติสัญญาณย้อนหลัง</div>
                         <div className='flex flex-col w-full'>
-                            <div className='flex items-center w-full justify-between border-b-1 border-[#868686]'>
+
+                            {/* Buy */}
+                            <div className='flex items-center w-full justify-between border-b border-[#3A3F55]'>
                                 <div className='flex gap-4 items-center py-2'>
-                                    <div className='text-[#868686] text-lg'>Buy</div>
-                                    <div className="w-0 h-0 border-l-8 border-r-8 border-b-10 border-transparent border-b-[#868686]"></div>
+                                    <div className='text-[#41DC8E] font-medium text-lg'>Buy</div>
+                                    <div className="w-0 h-0 border-l-8 border-r-8 border-b-10 border-transparent border-b-[#41DC8E]"></div>
                                 </div>
-                                <p className='text-[#868686] text-md'>5 นาทีผ่านมา</p>
+                                <p className='text-sm text-gray-400'>5 นาทีผ่านมา</p>
                             </div>
-                            <div className='flex items-center w-full justify-between border-b-1 border-[#868686]'>
+
+                            {/* Hold */}
+                            <div className='flex items-center w-full justify-between border-b border-[#3A3F55]'>
                                 <div className='flex gap-4 items-center py-2'>
-                                    <div className='text-[#868686] text-lg'>Hold</div>
-                                    <div className='w-3 h-3 bg-[#868686] rounded-full' />
+                                    <div className='text-yellow-400 font-medium text-lg'>Hold</div>
+                                    <div className='w-3 h-3 bg-yellow-400 rounded-full' />
                                 </div>
-                                <p className='text-[#868686] text-md'>1 วันที่ผ่านมา</p>
+                                <p className='text-sm text-gray-400'>1 วันที่ผ่านมา</p>
                             </div>
-                            <div className='flex items-center w-full justify-between border-b-1 border-[#868686]'>
+
+                            {/* Sell */}
+                            <div className='flex items-center w-full justify-between border-b border-[#3A3F55]'>
                                 <div className='flex gap-4 items-center py-2'>
-                                    <div className='text-[#868686] text-lg'>Sell</div>
-                                    <div className="w-0 h-0 border-l-8 border-r-8 border-t-10 border-transparent border-t-[#868686]"></div>
+                                    <div className='text-[#FF8282] font-medium text-lg'>Sell</div>
+                                    <div className="w-0 h-0 border-l-8 border-r-8 border-t-10 border-transparent border-t-[#FF8282]"></div>
                                 </div>
-                                <p className='text-[#868686] text-md'>2 กรกฎาคม 2568</p>
+                                <p className='text-sm text-gray-400'>2 กรกฎาคม 2568</p>
                             </div>
+
                         </div>
+
 
                         <div className='text-2xl text-white font-semibold my-2'>ข่าว {stock.stockSymbol} ล่าสุด</div>
                         <div className='flex flex-col w-full space-y-2'>

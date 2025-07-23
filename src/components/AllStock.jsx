@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import StockDetail from './StockDetail';
 import { FunnelIcon } from '@heroicons/react/24/solid';
 import CandlestickIcon from './../assets/CandlestickIcon'
-import StockCard from './StockCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { ArrowUp, ArrowDown, ChevronsUp, ChevronsDown, SortAsc, SortDesc } from 'lucide-react';
+import StockBullet from './StockBullet';
 
 
 function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
@@ -12,6 +12,16 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
         { id: 1, name: 'หุ้นทั้งหมด' },
         { id: 2, name: 'หุ้นยอดนิยม' },
     ];
+
+    const stockGroupOptions = [
+        { id: 1, name: 'หุ้นไทยทั้งหมด' },
+        { id: 2, name: 'SET50' },
+        { id: 3, name: 'SET100' },
+    ];
+    const [stockGroupSelected, setStockGroupSelected] = useState(stockGroupOptions[0]);
+    const [stockGroupOpen, setStockGroupOpen] = useState(false);
+    const stockGroupRef = useRef();
+
 
     const companyNames = [
         'TechNova',
@@ -41,6 +51,27 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
         { id: 2, name: 'Status' },
         { id: 3, name: 'อัพเดทล่าสุด' },
         { id: 4, name: 'watchlist' },
+        { id: 5, name: 'ราคาหุ้น' },
+    ];
+
+    const SET50 = [
+        "ADVANC", "AOT", "AWC", "BANPU", "BBL", "BCP", "BDMS", "BEM", "BH", "BJC",
+        "BTS", "CBG", "CCET", "COM7", "CPALL", "CPF", "CPN", "CRC", "DELTA", "EGCO",
+        "GPSC", "GULF", "HMPRO", "IVL", "KBANK", "KKP", "KTB", "KTC", "LH", "MINT",
+        "MTC", "OR", "OSP", "PTT", "PTTEP", "PTTGC", "RATCH", "SCB", "SCC", "SCGP",
+        "TCAP", "TIDLOR", "TISCO", "TLI", "TOP", "TRUE", "TTB", "TU", "VGI", "WHA"
+    ];
+
+    const SET100 = [
+        "AAV", "ADVANC", "AEONTS", "AMATA", "AOT", "AP", "AURA", "AWC", "BA", "BAM", "BANPU",
+        "BBL", "BCH", "BCP", "BCPG", "BDMS", "BEM", "BGRIM", "BH", "BJC", "BLA", "BTG", "BTS",
+        "CBG", "CCET", "CENTEL", "CHG", "CK", "COM7", "CPALL", "CPF", "CPN", "CRC", "DELTA",
+        "DOHOME", "EA", "EGCO", "ERW", "GLOBAL", "GPSC", "GULF", "GUNKUL", "HANA", "HMPRO",
+        "ICHI", "IRPC", "ITC", "IVL", "JAS", "JMART", "JMT", "JTS", "KBANK", "KCE", "KKP",
+        "KTB", "KTC", "LH", "M", "MBK", "MEGA", "MINT", "MOSHI", "MTC", "OR", "OSP", "PLANB",
+        "PR9", "PRM", "PTT", "PTTEP", "PTTGC", "QH", "RATCH", "RCL", "SAWAD", "SCB", "SCC",
+        "SCGP", "SIRI", "SISB", "SJWD", "SPALI", "SPRC", "STA", "STGT", "TASCO", "TCAP", "TFG",
+        "TIDLOR", "TISCO", "TLI", "TOA", "TOP", "TRUE", "TTB", "TU", "VGI", "WHA", "WHAUP"
     ];
 
     function getRandomDate(start, end) {
@@ -83,8 +114,34 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
         };
     });
 
+    function getPageNumbers(currentPage, totalPages) {
+        const pages = [];
 
+        if (totalPages <= 15) {
+            return Array.from({ length: totalPages }, (_, i) => i + 1);
+        }
 
+        pages.push(1);
+
+        if (currentPage > 5) {
+            pages.push('...');
+        }
+
+        const startPage = Math.max(2, currentPage - 2);
+        const endPage = Math.min(totalPages - 1, currentPage + 2);
+
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        if (currentPage < totalPages - 4) {
+            pages.push('...');
+        }
+
+        pages.push(totalPages);
+
+        return pages;
+    }
 
     const [switchState, setSwitchState] = useState(onSwitchChange);
     const [stockDetail, setStockDetail] = useState(stock);
@@ -94,24 +151,46 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
 
     // const [stocks, setStocks] = useState(mockStockData);stockList
     // const [stocks, setStocks] = useState(stockList);
-    const [stocks, setStocks] = useState(() => {
-        // โหลดจาก localStorage ถ้ามี ไม่งั้นเป็น array ว่าง
-        const saved = localStorage.getItem('SET50Stocks');
+    // const [stocks, setStocks] = useState(() => {
+    //     // โหลดจาก localStorage ถ้ามี ไม่งั้นเป็น array ว่าง
+    //     const saved = localStorage.getItem('AllStock');
+    //     return saved ? JSON.parse(saved) : [];
+    // });
+    const [allStocks, setAllStocks] = useState(() => {
+        const saved = localStorage.getItem('AllStock');
         return saved ? JSON.parse(saved) : [];
     });
+
+    const [stocks, setStocks] = useState(allStocks);
 
     const [sortSelected, setSortSelected] = useState(sortOptions[0]);
     const [sortDirection, setSortDirection] = useState('asc');
     const ref = useRef();
     const sortRef = useRef();
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 18;
-    const totalPages = Math.ceil(stocks.length / itemsPerPage);
+    // const itemsPerPage = 50;
+    // const totalPages = Math.ceil(stocks.length / itemsPerPage);
     const [popularStocks, setPopularStocks] = useState([]);
 
     const toggleSort = () => {
         setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
     };
+
+    useEffect(() => {
+        let filtered = [];
+
+        if (stockGroupSelected.id === 1) {
+            filtered = allStocks;
+        } else if (stockGroupSelected.id === 2) {
+            filtered = allStocks.filter(s => SET50.includes(s.stockSymbol));
+        } else if (stockGroupSelected.id === 3) {
+            filtered = allStocks.filter(s => SET100.includes(s.stockSymbol));
+        }
+
+        setStocks(filtered);
+        setCurrentPage(1);
+    }, [stockGroupSelected, allStocks]);
+
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -142,6 +221,9 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                     break;
                 case 4:
                     compareValue = (b.isFavorite === true) - (a.isFavorite === true);
+                    break;
+                case 5:
+                    compareValue = (a.stockPrice ?? 0) - (b.stockPrice ?? 0);
                     break;
                 default:
                     compareValue = 0;
@@ -212,7 +294,7 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
     //     );
     // };
     const handleToggleFavorite = (symbol) => {
-        const updatedStocks = stocks.map(s => {
+        const updatedStocks = allStocks.map(s => {
             if (s.stockSymbol === symbol) {
                 const newIsFavorite = !s.isFavorite;
 
@@ -225,7 +307,7 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
             return s;
         });
 
-        setStocks(updatedStocks);
+        setAllStocks(updatedStocks);
 
         // ✅ ส่งเฉพาะหุ้นที่ favorite อยู่ไปให้ parent
         const updatedFavorites = updatedStocks.filter(s => s.isFavorite);
@@ -235,14 +317,16 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
 
     // useEffect ซิงก์ FavoriteStocks ใน localStorage ทุกครั้งที่ stocks เปลี่ยน
     useEffect(() => {
-        const favoriteOnly = stocks.filter(s => s.isFavorite);
+        const favoriteOnly = allStocks.filter(s => s.isFavorite);
 
         localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
-        localStorage.setItem('SET50Stocks', JSON.stringify(stocks));
-    }, [stocks]);
+        localStorage.setItem('AllStock', JSON.stringify(allStocks));
+    }, [allStocks]);
 
 
-    const stocksPerPage = 15;
+
+    const stocksPerPage = 50;
+    const totalPages = Math.ceil(stocks.length / stocksPerPage);
 
     const filteredStocks = (() => {
         let result = [];
@@ -269,37 +353,8 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
         return result.slice(start, end);
     })();
 
-    // const filteredStocks = (() => {
-    //     // โหลด stocks จาก localStorage (ถ้าไม่มี ให้เป็น array ว่าง)
-    //     const storedStocks = JSON.parse(localStorage.getItem('SET50Stocks')) || [];
-
-    //     let result = [];
-
-    //     if (selected.id === 2) {
-    //         if (popularStocks.length === 0) return [];
-    //         result = storedStocks.filter(stock =>
-    //             popularStocks.some(p => p.stockSymbol === stock.stockSymbol)
-    //         );
-    //         return result;
-    //     }
-
-    //     if (sortSelected.id === 4) {
-    //         result = [...storedStocks].sort((a, b) => {
-    //             if (a.isFavorite === b.isFavorite) return 0;
-    //             return a.isFavorite ? -1 : 1;
-    //         });
-    //     } else {
-    //         result = storedStocks;
-    //     }
-
-    //     const start = (currentPage - 1) * stocksPerPage;
-    //     const end = start + stocksPerPage;
-    //     return result.slice(start, end);
-    // })();
-
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    const startIndex = (currentPage - 1) * stocksPerPage;
+    const endIndex = startIndex + stocksPerPage;
     const currentStocks = filteredStocks.slice(startIndex, endIndex);
 
     const handlePrev = () => {
@@ -326,7 +381,7 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                         <div className="text-3xl text-white pb-2 font-bold">หุ้น</div>
                         <CandlestickIcon />
                     </div>
-                    <div className="flex items-center self-end gap-4 ">
+                    <div className="flex sticky top-22 z-22 w-full justify-end bg-[#202431] gap-4 py-4 ">
                         {/* <div className="relative w-60" ref={ref}>
                             <div
                                 className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
@@ -347,6 +402,45 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                                 ))}
                             </div>
                         </div> */}
+                        <div className="relative w-60" ref={stockGroupRef}>
+                            <div
+                                className="bg-[#5D6275] text-white rounded px-4 py-2 cursor-pointer flex justify-between items-center"
+                                onClick={() => setStockGroupOpen(!stockGroupOpen)}
+                            >
+                                <span>{stockGroupSelected.name}</span>
+                                <svg
+                                    className={`w-5 h-5 ml-2 transition-transform duration-200 ${stockGroupOpen ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                            </div>
+
+                            <div
+                                className={`absolute z-10 mt-1 w-full bg-[#5D6275] rounded shadow-lg max-h-60 overflow-auto transition-all duration-200 origin-top ${stockGroupOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}
+                            >
+                                {stockGroupOptions.map((option) => (
+                                    <div
+                                        key={option.id}
+                                        className={`px-4 py-2 cursor-pointer text-white hover:bg-[#8C8F99]/50 ${stockGroupSelected.id === option.id ? 'bg-[#8C8F99] font-semibold' : ''}`}
+                                        onClick={() => {
+                                            setStockGroupSelected(option);
+                                            setStockGroupOpen(false);
+
+                                            // 📌 Logic ตัวกรองหุ้น สามารถใส่เพิ่มที่นี่ เช่น:
+                                            // loadStockGroup(option.id);
+                                        }}
+                                    >
+                                        {option.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
 
                         <div className="relative w-60" ref={sortRef}>
                             <div
@@ -402,11 +496,27 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 my-4">
+                    {/* Header */}
+                    <div
+                        className="flex items-center justify-between  py-2 bg-[#2E3343] text-white text-sm font-medium border-b border-gray-600 rounded-t
+                        sticky top-40 z-20"
+                    >
+                        <div className="flex items-center min-w-[180px] text-lg">
+                            <span className="w-10 h-10 ml-5"></span> {/* ช่องว่างไว้แทน logo */}
+                            หุ้น / Signal
+                        </div>
+                        <div className="min-w-[160px] text-end pr-2 text-lg">ราคา</div>
+                        <div className="flex-1 px-4 text-lg">คำอธิบาย Signal</div>
+                        <div className="min-w-[200px] text-lg text-end mr-5">อัปเดตล่าสุด</div>
+                        <div className="w-8 text-end"></div>
+                    </div>
+
+
+                    {/* Stocks List */}
+                    <div className="grid  grid-cols-1 gap-4 my-2">
                         {filteredStocks.map((stock, index) => (
-                            // animate__animated animate__fadeInUp
-                            <div key={index} className="">
-                                <StockCard
+                            <div key={index}>
+                                <StockBullet
                                     stockSymbol={stock.stockSymbol}
                                     price={stock.stockPrice}
                                     status={stock.status}
@@ -425,10 +535,13 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                                         setSwitchState(!switchState);
                                         setStockDetail(stock);
                                     }}
+                                    logo={stock.logo}
                                 />
                             </div>
                         ))}
                     </div>
+
+
 
                     {selected.id !== 2 && (
                         <div className="flex justify-center items-center space-x-2 my-4">
@@ -443,18 +556,23 @@ function AllStock({ stock, onSwitchChange, stockList, onFavoriteChange }) {
                                 <span>กลับ</span>
                             </div>
 
-                            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                            {getPageNumbers(currentPage, totalPages).map((page, index) => (
                                 <div
-                                    key={page}
-                                    onClick={() => handlePageClick(page)}
-                                    className={`px-3 py-1 rounded text-white cursor-pointer ${currentPage === page
+                                    key={index}
+                                    onClick={() => {
+                                        if (page !== '...') handlePageClick(page);
+                                    }}
+                                    className={`px-2 py-1 rounded text-white cursor-pointer ${page === currentPage
                                         ? 'bg-[#6870FA]'
-                                        : 'hover:bg-[#6870FA]/50'
+                                        : page === '...'
+                                            ? 'text-gray-400 cursor-default'
+                                            : 'hover:bg-[#6870FA]/50'
                                         }`}
                                 >
                                     {page}
                                 </div>
                             ))}
+
 
                             <div
                                 onClick={handleNext}

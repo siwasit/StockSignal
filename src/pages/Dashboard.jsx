@@ -103,7 +103,7 @@ function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [signalKey, setSignalKey] = useState(0);
-    const [SET50Stocks, setSET50Stocks] = useState([]);
+    const [AllStockData, setAllStock] = useState([]);
     // const [favoriteSideBarStocks, setFavoriteSideBarStocks] = useState([]);
     // useEffect(() => {
     //     const fetchFavoriteStocks = async () => {
@@ -184,7 +184,7 @@ function Dashboard() {
     //     };
     // }, []);
 
-    const BATCH_SIZE = 5;
+    // const BATCH_SIZE = 5;
     const SET50 = [
         "ADVANC", "AOT", "AWC", "BANPU", "BBL", "BCP", "BDMS", "BEM", "BH", "BJC",
         "BTS", "CBG", "CCET", "COM7", "CPALL", "CPF", "CPN", "CRC", "DELTA", "EGCO",
@@ -198,6 +198,129 @@ function Dashboard() {
         "AOT", "TRUE", "ADVANC", "KBANK"
     ];
     const didFetch = useRef(false);
+
+    // useEffect(() => {
+    //     if (didFetch.current) return;
+    //     didFetch.current = true;
+
+    //     function replaceOrAppendStocks(prevStocks, updatedStocks) {
+    //         const updatedSymbols = updatedStocks.map(stock => stock.stockSymbol?.toUpperCase());
+
+    //         const replacedStocks = prevStocks.map(existingStock => {
+    //             const index = updatedSymbols.indexOf(existingStock.stockSymbol?.toUpperCase());
+    //             return index !== -1 ? updatedStocks[index] : existingStock;
+    //         });
+
+    //         const newStocks = updatedStocks.filter(
+    //             stock => !prevStocks.some(s => s.stockSymbol?.toUpperCase() === stock.stockSymbol?.toUpperCase())
+    //         );
+
+    //         return [...replacedStocks, ...newStocks];
+    //     }
+
+    //     let tempResults = [];
+    //     // ย้ายออกมาเป็นฟังก์ชันระดับ useEffect (ไม่ซ้อน)
+    //     async function fetchAndProcessSymbols(symbols) {
+    //         for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+    //             const batch = symbols.slice(i, i + BATCH_SIZE);
+    //             const symbolQuery = batch.join(",");
+
+    //             const response = await fetch(`http://127.0.0.1:3007/StockData/${encodeURIComponent(symbolQuery)}`);
+    //             if (!response.ok) {
+    //                 throw new Error(`Error ${response.status}: ${response.statusText}`);
+    //             }
+
+    //             const json = await response.json();
+    //             const stocksArray = Array.isArray(json.data) ? json.data : [json.data];
+
+    //             const enrichedBatch = stocksArray.map((stock) => {
+    //                 const enrichedStock = {
+    //                     ...stock,
+    //                     status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
+    //                     reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][Math.floor(Math.random() * 3)],
+    //                     timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
+    //                     isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase())
+    //                 };
+
+    //                 return enrichedStock;
+    //             });
+
+    //             const favoriteBatch = enrichedBatch.filter(s => s.isFavorite);
+
+    //             if (favoriteBatch.length > 0) {
+    //                 setFavoriteStocks(prev => replaceOrAppendStocks(prev, favoriteBatch));
+    //             }
+
+    //             tempResults = [...tempResults, ...enrichedBatch];
+    //             setSETAllStock(prev => replaceOrAppendStocks(prev, enrichedBatch));
+
+    //             // ✅ หลังจบแต่ละ Batch → เซฟ localStorage ทันที
+    //             localStorage.setItem('AllStock', JSON.stringify(tempResults));
+
+    //             const favoriteOnly = tempResults.filter(s => s.isFavorite);
+    //             localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+    //             console.log(`💾 Saved batch ${i / BATCH_SIZE + 1} to localStorage`);
+    //         }
+    //     }
+
+
+    //     // ย้ายออกมาอยู่ข้างนอกเช่นกัน
+    //     async function checkAndReloadMissing(results) {
+    //         const missingSymbols = results
+    //             .filter(stock =>
+    //                 !stock?.stockSymbol ||
+    //                 stock?.stockPrice == null ||
+    //                 stock?.changePct == null
+    //             )
+    //             .map(stock => stock?.stockSymbol)
+    //             .filter(Boolean);
+
+    //         if (missingSymbols.length > 0) {
+    //             console.warn("🔄 Reload missing stocks:", missingSymbols);
+    //             await fetchAndProcessSymbols(missingSymbols);
+    //         }
+    //     }
+
+    //     async function fetchStocksInTwoSteps() {
+    //         setLoading(true);
+    //         setError(null);
+
+    //         try {
+    //             setSETAllStock([]);
+    //             setFavoriteStocks([]);
+
+    //             // 1️⃣ โหลดหุ้น favorite ก่อน
+    //             await fetchAndProcessSymbols(favoriteSymbols);
+
+    //             // 2️⃣ โหลดหุ้น SET50 ที่เหลือจริง ๆ (ไม่เอา favoriteSymbols ซ้ำ)
+    //             const nonFavoriteSymbols = SET50.filter(
+    //                 symbol => !favoriteSymbols.includes(symbol)
+    //             );
+
+    //             await fetchAndProcessSymbols(nonFavoriteSymbols);
+
+    //             console.log("✅ Loaded all stocks:", tempResults);
+
+    //             await checkAndReloadMissing(tempResults);
+
+    //             // // 3️⃣ เซฟ stocks ทั้งหมดลง AllStock
+    //             // localStorage.setItem('AllStock', JSON.stringify(tempResults));
+
+    //             // // 4️⃣ Filter เฉพาะหุ้นที่ favorite จริงๆ แล้วเซฟแยก
+    //             // const favoriteOnly = tempResults.filter(s => s.isFavorite);
+    //             // localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+    //         } catch (err) {
+    //             setError(err.message || "Unknown error");
+    //         } finally {
+    //             setLoading(false);
+    //         }
+    //     }
+
+    //     fetchStocksInTwoSteps();
+
+    // }, []);
 
     useEffect(() => {
         if (didFetch.current) return;
@@ -219,53 +342,45 @@ function Dashboard() {
         }
 
         let tempResults = [];
-        // ย้ายออกมาเป็นฟังก์ชันระดับ useEffect (ไม่ซ้อน)
-        async function fetchAndProcessSymbols(symbols) {
-            for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
-                const batch = symbols.slice(i, i + BATCH_SIZE);
-                const symbolQuery = batch.join(",");
 
-                const response = await fetch(`http://127.0.0.1:3007/StockData/${encodeURIComponent(symbolQuery)}`);
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}: ${response.statusText}`);
-                }
-
-                const json = await response.json();
-                const stocksArray = Array.isArray(json.data) ? json.data : [json.data];
-
-                const enrichedBatch = stocksArray.map((stock) => {
-                    const enrichedStock = {
-                        ...stock,
-                        status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
-                        reason: ['Break EMA', 'Volume Surge', 'MACD Signal'][Math.floor(Math.random() * 3)],
-                        timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
-                        isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase())
-                    };
-
-                    return enrichedStock;
-                });
-
-                const favoriteBatch = enrichedBatch.filter(s => s.isFavorite);
-
-                if (favoriteBatch.length > 0) {
-                    setFavoriteStocks(prev => replaceOrAppendStocks(prev, favoriteBatch));
-                }
-
-                tempResults = [...tempResults, ...enrichedBatch];
-                setSET50Stocks(prev => replaceOrAppendStocks(prev, enrichedBatch));
-
-                // ✅ หลังจบแต่ละ Batch → เซฟ localStorage ทันที
-                localStorage.setItem('SET50Stocks', JSON.stringify(tempResults));
-
-                const favoriteOnly = tempResults.filter(s => s.isFavorite);
-                localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
-
-                console.log(`💾 Saved batch ${i / BATCH_SIZE + 1} to localStorage`);
+        async function fetchAndProcessAllStocks() {
+            const response = await fetch(`http://127.0.0.1:3007/StockData`);
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
             }
+
+            const json = await response.json();
+            const stocksArray = Array.isArray(json.data) ? json.data : [json.data];
+
+            const enrichedBatch = stocksArray.map((stock) => {
+                const enrichedStock = {
+                    ...stock,
+                    status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
+                    reason: 'Not started yet',
+                    timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
+                    isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase())
+                };
+
+                return enrichedStock;
+            });
+
+            const favoriteBatch = enrichedBatch.filter(s => s.isFavorite);
+
+            if (favoriteBatch.length > 0) {
+                setFavoriteStocks(prev => replaceOrAppendStocks(prev, favoriteBatch));
+            }
+
+            tempResults = [...tempResults, ...enrichedBatch];
+            setAllStock(prev => replaceOrAppendStocks(prev, enrichedBatch));
+
+            localStorage.setItem('AllStock', JSON.stringify(tempResults));
+
+            const favoriteOnly = tempResults.filter(s => s.isFavorite);
+            localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
+
+            console.log(`💾 Saved all stocks to localStorage`);
         }
 
-
-        // ย้ายออกมาอยู่ข้างนอกเช่นกัน
         async function checkAndReloadMissing(results) {
             const missingSymbols = results
                 .filter(stock =>
@@ -278,38 +393,23 @@ function Dashboard() {
 
             if (missingSymbols.length > 0) {
                 console.warn("🔄 Reload missing stocks:", missingSymbols);
-                await fetchAndProcessSymbols(missingSymbols);
+                await fetchAndProcessAllStocks();  // ดึงใหม่ทั้งไฟล์ เพราะ endpoint ไม่มี filter
             }
         }
 
-        async function fetchStocksInTwoSteps() {
+        async function fetchStocksOnce() {
             setLoading(true);
             setError(null);
 
             try {
-                setSET50Stocks([]);
+                setAllStock([]);  // ยังใช้ชื่อนี้แต่หมายถึงหุ้นทั้งหมด
                 setFavoriteStocks([]);
 
-                // 1️⃣ โหลดหุ้น favorite ก่อน
-                await fetchAndProcessSymbols(favoriteSymbols);
-
-                // 2️⃣ โหลดหุ้น SET50 ที่เหลือจริง ๆ (ไม่เอา favoriteSymbols ซ้ำ)
-                const nonFavoriteSymbols = SET50.filter(
-                    symbol => !favoriteSymbols.includes(symbol)
-                );
-
-                await fetchAndProcessSymbols(nonFavoriteSymbols);
+                await fetchAndProcessAllStocks();
 
                 console.log("✅ Loaded all stocks:", tempResults);
 
                 await checkAndReloadMissing(tempResults);
-
-                // // 3️⃣ เซฟ stocks ทั้งหมดลง SET50Stocks
-                // localStorage.setItem('SET50Stocks', JSON.stringify(tempResults));
-
-                // // 4️⃣ Filter เฉพาะหุ้นที่ favorite จริงๆ แล้วเซฟแยก
-                // const favoriteOnly = tempResults.filter(s => s.isFavorite);
-                // localStorage.setItem('FavoriteStocks', JSON.stringify(favoriteOnly));
 
             } catch (err) {
                 setError(err.message || "Unknown error");
@@ -318,12 +418,13 @@ function Dashboard() {
             }
         }
 
-        fetchStocksInTwoSteps();
+        fetchStocksOnce();
 
     }, []);
 
 
-    const filteredStocks = SET50Stocks.filter((stock) =>
+
+    const filteredStocks = AllStockData.filter((stock) =>
         stock.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -354,7 +455,7 @@ function Dashboard() {
         window.addEventListener('resize', checkOverflow);
         return () => window.removeEventListener('resize', checkOverflow);
     }, [activeMenu]);
-    
+
     // min-w-[99vw]' : 'w-[100vw]
     return (
         // <div
@@ -528,7 +629,7 @@ function Dashboard() {
                                 onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
                             />
                             <Search className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            {showDropdown && filteredStocks.length > 0 && (
+                            {showDropdown && searchTerm.trim() !== '' && filteredStocks.length > 0 && (
                                 <div className="absolute z-10 mt-1 w-full bg-[#2E3343] border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
                                     {filteredStocks.map((stock, index) => (
                                         <div
@@ -611,7 +712,7 @@ function Dashboard() {
 
                 {activeMenu === 'stock' && (
                     <>
-                        {SET50Stocks.length === 0 ? (
+                        {AllStockData.length === 0 ? (
                             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-100">
                                 <img
                                     src="/icons/OliveSpinner.svg"
@@ -622,7 +723,7 @@ function Dashboard() {
                                     Loading favorite stocks...
                                 </div>
                                 {/* <div className="mt-1 text-xl font-bold text-green-400">
-                                    Loaded: {SET50Stocks.length} / {SET50.length}
+                                    Loaded: {AllStock.length} / {SET50.length}
                                 </div> */}
                             </div>
                         ) : error ? (
@@ -631,10 +732,10 @@ function Dashboard() {
                             </div>
                         ) : (
                             <AllStock
-                                key={`${signalKey}-${SET50Stocks.length}`}  // ผสมทั้งรอบ trigger และจำนวน stocks
+                                key={`${signalKey}-${AllStock.length}`}  // ผสมทั้งรอบ trigger และจำนวน stocks
                                 onSwitchChange={switchState}
                                 stock={stockDetail}
-                                // stockList={SET50Stocks}
+                                // stockList={AllStock}
                                 onFavoriteChange={handleFavoriteChange}
                             />
                         )}
