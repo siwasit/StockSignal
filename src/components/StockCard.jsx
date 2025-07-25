@@ -73,14 +73,27 @@
 //         </div>
 
 //     );
-// }
+// } StockCard({ logo, stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick, price })
 
 import React from 'react';
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import 'animate.css';
 
-function StockCard({ logo, stockSymbol, status, reason, timeStamp, isFavorite, onToggleFavorite, onClick, price }) {
+function StockCard({ stock, onToggleFavorite, onClick }) {
+
+    const {
+        logo,
+        stockSymbol,
+        status,
+        reason,
+        timeStamp,
+        isFavorite,
+        stockPrice,
+        changePct,
+        currency
+    } = stock;
+
     const statusColor = {
         Buy: 'text-green-400',
         Hold: 'text-yellow-400',
@@ -117,23 +130,56 @@ function StockCard({ logo, stockSymbol, status, reason, timeStamp, isFavorite, o
                     </button>
                 </div>
 
-                <div className="text-base text-gray-300">
-                    ราคา: <span className="font-bold">{price != null ? `${price} บาท` : '- บาท'}</span>
+                <div className='flex items-center space-x-4'>
+                    <div className="text-white text-xl pb-1">
+                        <span className="font-regular">
+                            {stockPrice != null ? `${currency}${Number(stockPrice).toLocaleString('th-TH', { minimumFractionDigits: 2 })}` : '-'}
+                        </span>
+                    </div>
+                    <div
+                        className={`text-lg ${changePct > 0
+                            ? 'text-green-300'
+                            : stock.changePct < 0
+                                ? 'text-red-400'
+                                : 'text-gray-400'
+                            }`}
+                    >
+                        <span className="font-regular">{changePct != null ? `${changePct} %` : '- %'}</span>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className="text-lg">สถานะ:</div>
-                    <div className={`text-lg font-bold ${statusColor}`}>{status}</div>
-                    <StatusIcon status={status} />
+                <div className='flex items-center w-full'>
+                    {/* ฝั่งซ้าย 40% */}
+                    <div className="flex flex-col justify-start items-start gap-2 w-1/5">
+                        <div className="text-lg">สถานะ:</div>
+                        <div className='flex gap-2 items-center'>
+                            <div className={`text-lg font-bold ${statusColor}`}>{status}</div>
+                            <StatusIcon status={status} />
+                        </div>
+                    </div>
+
+                    {/* เส้นคั่นกลาง */}
+                    <div className="w-px h-20 bg-gray-400 mx-4" />
+
+                    {/* ฝั่งขวา 60% */}
+                    <div className="flex flex-col gap-2 w-3/5">
+                        <div className="text-lg">เหตุผล:</div>
+                        <div className="text-lg text-gray-300">{reason}</div>
+                    </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <div className="text-lg">เหตุผล:</div>
-                    <div className="text-lg text-gray-300">{reason}</div>
-                </div>
             </div>
 
-            <div className="text-base text-end text-[#CDCDCD] mt-2">{timeStamp}</div>
+            <div className="text-base text-end text-[#CDCDCD]">
+                {`อัปเดตล่าสุด: ${new Date(timeStamp).toLocaleString('en-US', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                })}`}
+            </div>
         </div>
     );
 }

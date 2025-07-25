@@ -3,7 +3,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { calculateEMA, calculateRSI, calculateMACD, calculateVolume, calculateOBV } from './../assets/indicators'; // ด้านล่างจะเขียนให้
-import { ExternalLink, ChevronRight } from 'lucide-react';
+import { ExternalLink, ChevronRight, LineChart } from 'lucide-react';
 import NewsCard from './NewsCard';
 import { motion } from 'framer-motion';
 
@@ -173,37 +173,43 @@ function StockDetail({ stock }) {
         if (didFetch.current) return;
         didFetch.current = true;
 
-        async function loadCompanyData(retryCount = 3) {
+        // async function loadCompanyData() {
+        //     setIsLoading(true);
+        //     setCompanyData(null); // เคลียร์ค่าก่อน
+
+        //     try {
+        //         const response = await fetch(`http://127.0.0.1:3007/CompanyData/${encodeURIComponent(stock.stockSymbol)}`);
+        //         if (!response.ok) throw new Error('Failed to fetch company data');
+
+        //         const data = await response.json();
+        //         setCompanyData(data);
+
+        //         console.log('โหลดข้อมูลสำเร็จ', data);
+        //     } catch (error) {
+        //         console.error('เกิดข้อผิดพลาดระหว่างโหลดข้อมูล:', error);
+        //     } finally {
+        //         setIsLoading(false);
+        //     }
+        // }
+        async function loadCompanyData() {
             setIsLoading(true);
-            setCompanyData(null); // เคลียร์ค่าเดิมก่อนเริ่มดึงใหม่
+            setCompanyData(null); // เคลียร์ค่าก่อน
 
-            for (let attempt = 1; attempt <= retryCount; attempt++) {
-                try {
-                    const response = await fetch(`http://127.0.0.1:3007/CompanyData/${encodeURIComponent(stock.stockSymbol)}`);
-                    if (!response.ok) throw new Error('Failed to fetch company data');
+            try {
+                const response = await fetch(`http://127.0.0.1:3007/CompanyProfile/${encodeURIComponent(stock.stockSymbol)}`);
+                if (!response.ok) throw new Error('Failed to fetch company data');
 
-                    const data = await response.json();
-                    setCompanyData(data);
+                const data = await response.json();
+                console.log(data)
+                setCompanyData(data);
 
-                    if (data) {
-                        setIsLoading(false);
-                        console.log('สำเร็จรอบที่', attempt, data);
-                        return; // มีข้อมูลแล้ว ไม่ต้อง retry
-                    }
-
-                } catch (error) {
-                    console.error(`Attempt ${attempt} failed:`, error);
-                }
-
-                // รอ 1 วินาทีก่อนลองใหม่
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // console.log('โหลดข้อมูลสำเร็จ', data);
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดระหว่างโหลดข้อมูล:', error);
+            } finally {
+                setIsLoading(false);
             }
-
-            // ถ้าไม่มีข้อมูลแม้จะลองครบแล้ว
-            setIsLoading(false);
-            console.warn('โหลดข้อมูลไม่สำเร็จหลังจากลองครบทุกครั้ง');
         }
-
 
         async function fetchData() {
             try {
@@ -338,6 +344,15 @@ function StockDetail({ stock }) {
         });
 
         // CANDLESTICK SERIES
+        const currencySymbols = {
+            USD: '$',
+            THB: '฿',
+            CNY: '¥'
+        };
+
+        const currencyCode = stock.fullCurrency ?? 'THB';  // รหัส เช่น 'USD'
+        const currencySymbol = currencySymbols[currencyCode] ?? '฿'; // แปลงเป็นสัญลักษณ์
+
         const candleSeries = mainChart.addSeries(CandlestickSeries, {
             upColor: '#26a69a',
             downColor: '#ef5350',
@@ -347,7 +362,7 @@ function StockDetail({ stock }) {
             wickDownColor: '#ef5350',
             priceFormat: {
                 type: 'custom',
-                formatter: (price) => Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(price),
+                formatter: (price) => `${currencySymbol}${price.toLocaleString('en-US')}`,
             }
         });
         candleSeries.setData(filtered);
@@ -444,6 +459,17 @@ function StockDetail({ stock }) {
             const obvSeries = obvChart.addSeries(LineSeries, {
                 color: '#A084DC',
                 lineWidth: 2,
+                priceFormat: {
+                    type: 'custom',
+                    formatter: (price) => {
+                        if (Math.abs(price) >= 1_000_000) {
+                            return (price / 1_000_000).toFixed(2) + 'M';
+                        } else if (Math.abs(price) >= 1_000) {
+                            return (price / 1_000).toFixed(1) + 'K';
+                        }
+                        return price.toFixed(0);
+                    },
+                },
             });
 
             if (indicators.obv && filtered.length > 0) {
@@ -633,9 +659,14 @@ function StockDetail({ stock }) {
             <div className='flex flex-col mt-4'>
                 <div className="flex items-center space-x-4 w-full">
                     <img
-                        src={stock.logo}            // ลิงก์โลโก้หุ้นจากข้อมูล stock
-                        alt={stock.stockSymbol}     // ใส่ชื่อหุ้นใน alt เพื่อ SEO / Accessibility
-                        className="w-15 h-15 rounded-full object-cover"
+                        src={stock.logo}
+                        alt={stock.stockSymbol}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={(e) => {
+                            // ถ้าโหลดโลโก้ไม่สำเร็จ ให้ใช้โลโก้ fallback ที่เก็บไว้ใน assets
+                            e.currentTarget.onerror = null; // ป้องกัน loop ซ้ำ
+                            e.currentTarget.src = `/src/assets/us_logo/${stock.stockSymbol}.png`;
+                        }}
                     />
 
                     <div className="flex-1 pr-4">
@@ -671,59 +702,50 @@ function StockDetail({ stock }) {
 
                 <div className='flex w-full h-full mb-4'>
                     <div className='flex flex-col w-[75%] h-full pr-4 border-r-2 border-[#868686]'>
-                        <div className="flex space-y-1 justify-between my-3 text-gray-100">
+                        <div className="flex-col space-y-2 my-3 text-gray-100">
                             <div className="flex space-x-4 items-center font-semibold text-xl">
-                                <div>{priceNow.toFixed(2)}฿</div>
+                                <div>{priceNow.toFixed(2)} {stockDetail.currency}</div>
                                 <div className={priceColor}>
                                     {pricePrefix}{priceChangePercent}%
                                 </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-4 text-white">
-                                {['rsi', 'volume', 'ema', 'macd', 'obv'].map((name) => (
-                                    <label key={name} className="flex items-center gap-1 cursor-pointer select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={indicators[name]}
-                                            onChange={() => handleCheckboxChange(name)}
-                                            className="
-                                            w-5 h-5
-                                            rounded
-                                            border border-gray-600
-                                            bg-[#1F2230]
-                                            checked:bg-gray-900
-                                            checked:border-gray-900
-                                            checked:text-white
-                                            appearance-none
-                                            cursor-pointer
-                                            relative
-                                            before:absolute before:inset-0 before:flex before:items-center before:justify-center before:text-white before:content-['✔']
-                                            before:opacity-0
-                                            checked:before:opacity-100
-                                            transition-all
-                                            "
-                                        />
-                                        <span className="uppercase">{name}</span>
-                                    </label>
-                                ))}
-                            </div>
+                            <div className='flex justify-between items-center'>
+                                <div className="flex items-center flex-wrap gap-2 px-2 py-1 text-white bg-[#2E3343] rounded-xl">
+                                    <LineChart size={24} className="mr-2" />
+                                    {['rsi', 'volume', 'ema', 'macd', 'obv'].map((name) => {
+                                        const isChecked = indicators[name];
+                                        return (
+                                            <div
+                                                key={name}
+                                                onClick={() => handleCheckboxChange(name)}
+                                                className={`
+                                                px-2 py-1 rounded-lg flex items-center cursor-pointer text-sm uppercase select-none transition-all
+                                                ${isChecked ? 'bg-[#6870FA] text-white' : 'text-[#868686] hover:bg-[#6870FA]/50 hover:text-white'}
+                                            `}
+                                            >
+                                                {name}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
 
-
-                            <div className='flex items-center'>
-                                {/* <div className="text-sm text-gray-400">{stockDetail.timeStamp}</div> */}
-                                <div className='flex items-center bg-[#2E3343] rounded-xl p-2 gap-2'>
-                                    {options.map(option => (
-                                        <div
-                                            key={option}
-                                            onClick={() => setScaleActive(option)}
-                                            className={`px-4 rounded-lg cursor-pointer transition-all 
+                                <div className='flex items-center'>
+                                    {/* <div className="text-sm text-gray-400">{stockDetail.timeStamp}</div> */}
+                                    <div className='flex items-center bg-[#2E3343] rounded-xl px-2 py-1 gap-2'>
+                                        {options.map(option => (
+                                            <div
+                                                key={option}
+                                                onClick={() => setScaleActive(option)}
+                                                className={`px-3 text-sm py-1 rounded-lg cursor-pointer transition-all 
                                     ${scaleActive === option
-                                                    ? 'bg-[#CDCDCD] text-black'
-                                                    : 'text-[#868686] hover:bg-gray-300 hover:text-black'}`}
-                                        >
-                                            {option}
-                                        </div>
-                                    ))}
+                                                        ? 'bg-[#6870FA] text-white'
+                                                        : 'text-[#868686] hover:bg-[#6870FA]/50 hover:text-white'}`}
+                                            >
+                                                {option}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -771,7 +793,7 @@ function StockDetail({ stock }) {
 
                         {/* <div className='text-end px-3 text-[#868686]'>ตัวชี้วัด: RSI 68 | MACD +1.2 | EMA20</div> */}
                         <div className='flex flex-col'>
-                            <div className='text-2xl text-white font-bold my-4'>ข้อมูล{stockDetail.ThaiCompanyName} ({stockDetail.stockSymbol})</div>
+                            <div className='text-2xl text-white font-bold my-4'>ข้อมูล {stockDetail.ThaiCompanyName} ({stockDetail.stockSymbol})</div>
 
                             {isLoading ? (
                                 <div className=" my-4 flex flex-col items-center justify-center text-gray-100">
@@ -789,86 +811,129 @@ function StockDetail({ stock }) {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
+
                                     {/* มูลค่าตามราคาตลาด */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
                                         <div className="text-lg font-medium border-b pb-1 border-gray-500">มูลค่าตามราคาตลาด</div>
-                                        <div className="text-md ">
-                                            {companyData?.highlight_data?.marketCap
-                                                ? (companyData.highlight_data.marketCap / 1e9).toFixed(2) + " B THB"
+                                        <div className="text-md">
+                                            {companyData?.["Market capitalization"]?.value !== undefined
+                                                ? `${companyData["Market capitalization"].value.toFixed(2)}${companyData["Market capitalization"].prefix ? '' + companyData["Market capitalization"].prefix : ''}${companyData["Market capitalization"].currency ? ' ' + stock.currency : ''}`
                                                 : "-"}
                                         </div>
                                     </div>
 
                                     {/* อัตราผลตอบแทนจากเงินปันผล */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">อัตราผลตอบแทนจากเงินปันผล</div>
-                                        <div className="text-md ">
-                                            {companyData?.highlight_data?.dividendYield12M
-                                                ? companyData.highlight_data.dividendYield12M.toFixed(2) + " %"
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อัตราผลตอบแทนจากเงินปันผล</div>
+                                        <div className="text-md">
+                                            {companyData?.["Dividend yield (indicated)"]?.value !== undefined
+                                                ? `${companyData["Dividend yield (indicated)"].value.toFixed(2)} %`
                                                 : "-"}
                                         </div>
                                     </div>
 
-                                    {/* อัตราส่วนราคาต่อกำไรสุทธิ (12 เดือนล่าสุด) */}
+                                    {/* อัตราส่วนราคาต่อกำไรสุทธิ */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">อัตราส่วนราคาต่อกำไรสุทธิ</div>
-                                        <div className="text-md ">
-                                            {companyData?.highlight_data?.peRatio
-                                                ? companyData.highlight_data.peRatio.toFixed(2)
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อัตราส่วนราคาต่อกำไรสุทธิ</div>
+                                        <div className="text-md">
+                                            {companyData?.["Price to earnings Ratio (TTM)"]?.value !== undefined
+                                                ? companyData["Price to earnings Ratio (TTM)"].value.toFixed(2)
                                                 : "-"}
                                         </div>
                                     </div>
 
-                                    {/* ผู้บริหารสูงสุด */}
+                                    {/* กำไรพื้นฐานต่อหุ้น (Basic EPS) */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">ผู้บริหาร</div>
-                                        <div className="text-md font-thin flex flex-col gap-1">
-                                            {companyData?.board_of_director
-                                                ? companyData.board_of_director
-                                                    .filter(member =>
-                                                        member.positions.some(position =>
-                                                            position.includes("ประธาน")
-                                                        )
-                                                    )
-                                                    .map((member, index) => (
-                                                        <div key={index} className="flex flex-col">
-                                                            <span className="font-semibold text-white">{member.name}</span>
-                                                            <span className="text-[#C0C0C0] text-sm">
-                                                                {member.positions
-                                                                    .filter(position => position.includes("ประธาน"))
-                                                                    .join(", ")}
-                                                            </span>
-                                                        </div>
-                                                    ))
-                                                : <div>-</div>}
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กำไรพื้นฐานต่อหุ้น (Basic EPS)</div>
+                                        <div className="text-md">
+                                            {companyData?.["Basic EPS (TTM)"]?.value !== undefined
+                                                ? `${companyData["Basic EPS (TTM)"].value.toFixed(2)}${companyData["Basic EPS (TTM)"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"}
                                         </div>
                                     </div>
 
-                                    {/* ถูกก่อตั้ง */}
+                                    {/* กำไรสุทธิ (Net income FY) */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">ถูกก่อตั้ง</div>
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กำไรสุทธิ (ปีล่าสุด)</div>
+                                        <div className="text-md">
+                                            {companyData?.["Net income (FY)"]?.value !== undefined
+                                                ? `${companyData["Net income (FY)"].value.toFixed(2)}${companyData["Net income (FY)"].prefix ? '' + companyData["Net income (FY)"].prefix : ''}${companyData["Net income (FY)"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* รายได้ (Revenue FY) */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">รายได้ (ปีล่าสุด)</div>
+                                        <div className="text-md">
+                                            {companyData?.["Revenue (FY)"]?.value !== undefined
+                                                ? `${companyData["Revenue (FY)"].value.toFixed(2)}${companyData["Revenue (FY)"].prefix ? '' + companyData["Revenue (FY)"].prefix : ''}${companyData["Revenue (FY)"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* จำนวนหุ้นลอยตัว (Shares float) */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">จำนวนหุ้นลอยตัว</div>
+                                        <div className="text-md">
+                                            {companyData?.["Shares float"]?.value !== undefined
+                                                ? `${companyData["Shares float"].value.toFixed(2)}${companyData["Shares float"].prefix ? '' + companyData["Shares float"].prefix : ''} ตัว`
+                                                : "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* Sector */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กลุ่มธุรกิจ (Sector)</div>
                                         <div className="text-md font-thin">
-                                            {formatEstablishedDate(companyData?.profile_data?.establishedDate)}
+                                            {companyData?.Sector || "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* ผู้บริหาร */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">ประธานเจ้าหน้าที่บริหาร</div>
+                                        <div className="text-md font-thin">
+                                            {companyData?.CEO || "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* Industry */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อุตสาหกรรม (Industry)</div>
+                                        <div className="text-md font-thin">
+                                            {companyData?.Industry || "-"}
+                                        </div>
+                                    </div>
+
+                                    {/* ก่อตั้ง */}
+                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">ก่อตั้ง</div>
+                                        <div className="text-md font-thin">
+                                            {companyData?.Founded || "-"}
                                         </div>
                                     </div>
 
                                     {/* เว็บไซต์ */}
                                     <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b pb-1 border-gray-500">เว็บไซต์</div>
+                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">เว็บไซต์</div>
                                         <div>
-                                            <a
-                                                href={companyData?.profile_data?.url || "#"}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 group cursor-pointer text-md font-thin text-white group-hover:text-[#6870FA] transition-colors duration-200"
-                                            >
-                                                {companyData?.profile_data?.url
-                                                    ? companyData.profile_data.url.replace(/^https?:\/\//, "")
-                                                    : "-"}
-                                                <ExternalLink className="w-4 h-4 text-white opacity-60 group-hover:text-[#6870FA] transition-colors duration-200" />
-                                            </a>
+                                            {companyData?.Website ? (
+                                                <a
+                                                    href={`https://${companyData.Website}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-2 group cursor-pointer text-md font-thin text-white group-hover:text-[#6870FA] transition-colors duration-200"
+                                                >
+                                                    {companyData.Website}
+                                                    <ExternalLink className="w-4 h-4 text-white opacity-60 group-hover:text-[#6870FA] transition-colors duration-200" />
+                                                </a>
+                                            ) : (
+                                                <div className="text-md font-thin text-white">-</div>
+                                            )}
                                         </div>
                                     </div>
+
                                 </div>
                             )}
                         </div>

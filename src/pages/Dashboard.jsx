@@ -6,6 +6,7 @@ import AllStock from '../components/AllStock';
 import StockDetail from '../components/StockDetail';
 import Setting from '../components/Setting';
 import { useNavigate } from 'react-router-dom';
+import { FixedSizeList as List } from 'react-window';
 
 function Dashboard() {
     const [isOverflowing, setIsOverflowing] = useState(false);
@@ -185,13 +186,6 @@ function Dashboard() {
     // }, []);
 
     // const BATCH_SIZE = 5;
-    const SET50 = [
-        "ADVANC", "AOT", "AWC", "BANPU", "BBL", "BCP", "BDMS", "BEM", "BH", "BJC",
-        "BTS", "CBG", "CCET", "COM7", "CPALL", "CPF", "CPN", "CRC", "DELTA", "EGCO",
-        "GPSC", "GULF", "HMPRO", "IVL", "KBANK", "KKP", "KTB", "KTC", "LH", "MINT",
-        "MTC", "OR", "OSP", "PTT", "PTTEP", "PTTGC", "RATCH", "SCB", "SCC", "SCGP",
-        "TCAP", "TIDLOR", "TISCO", "TLI", "TOP", "TRUE", "TTB", "TU", "VGI", "WHA"
-    ];
 
     const favoriteSymbols = [
         "PTT", "CPALL", "TPLAS", "SCB", "BBL",
@@ -343,6 +337,22 @@ function Dashboard() {
 
         let tempResults = [];
 
+        const currencySymbols = {
+            USD: "$",
+            THB: "฿",
+            CNY: "¥"
+        };
+
+        const exchangeCurrencies = {
+            AMEX: "USD",
+            CBOE: "USD",
+            NASDAQ: "USD",
+            NYSE: "USD",
+            SET: "THB",
+            SSE: "CNY",
+            SZSE: "CNY"
+        };
+
         async function fetchAndProcessAllStocks() {
             const response = await fetch(`http://127.0.0.1:3007/StockData`);
             if (!response.ok) {
@@ -358,7 +368,9 @@ function Dashboard() {
                     status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
                     reason: 'Not started yet',
                     timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
-                    isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase())
+                    isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase()),
+                    currency: currencySymbols[exchangeCurrencies[stock.stockMarket]],
+                    fullCurrency: exchangeCurrencies[stock.stockMarket]
                 };
 
                 return enrichedStock;
@@ -407,7 +419,7 @@ function Dashboard() {
 
                 await fetchAndProcessAllStocks();
 
-                console.log("✅ Loaded all stocks:", tempResults);
+                // console.log("✅ Loaded all stocks:", tempResults);
 
                 await checkAndReloadMissing(tempResults);
 
@@ -421,8 +433,6 @@ function Dashboard() {
         fetchStocksOnce();
 
     }, []);
-
-
 
     const filteredStocks = AllStockData.filter((stock) =>
         stock.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase())
@@ -630,37 +640,53 @@ function Dashboard() {
                             />
                             <Search className="w-5 h-5 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             {showDropdown && searchTerm.trim() !== '' && filteredStocks.length > 0 && (
-                                <div className="absolute z-10 mt-1 w-full bg-[#2E3343] border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
-                                    {filteredStocks.map((stock, index) => (
-                                        <div
-                                            key={index}
-                                            className="px-4 py-2 cursor-pointer flex items-center hover:bg-[#3E4355] text-white"
-                                            onClick={() => handleSelect(stock)}
-                                        >
-                                            <img
-                                                src={stock.logo}            // ลิงก์โลโก้หุ้นจากข้อมูล stock
-                                                alt={stock.stockSymbol}     // ใส่ชื่อหุ้นใน alt เพื่อ SEO / Accessibility
-                                                className="w-10 h-10 rounded-full object-cover"
-                                            />
-                                            <div className='flex-1 px-4'>
-                                                <div className="text-white text-sm font-medium">{stock.stockSymbol}</div>
-                                                <div className="text-white text-xs">{stock.companyName}</div>
-                                            </div>
-                                            <div
-                                                className={`text-sm font-medium ${stock.changePct > 0
-                                                    ? 'text-green-300'
-                                                    : stock.changePct < 0
-                                                        ? 'text-red-400'
-                                                        : 'text-gray-400'
-                                                    }`}
-                                            >
-                                                {stock.changePct > 0
-                                                    ? `+${stock.changePct}%`
-                                                    : `${stock.changePct}%`}
-                                            </div>
+                                <div className="absolute z-10 mt-1 w-full bg-[#2E3343] border border-gray-600 rounded-lg shadow-lg max-h-80">
+                                    <List
+                                        height={320} // สูงสุดเท่ากับ max-h-80 = 20rem = 320px
+                                        itemCount={filteredStocks.length}
+                                        itemSize={64} // ความสูงต่อแถว (px) ปรับตาม content จริง
+                                        width="100%"
+                                    >
+                                        {({ index, style }) => {
+                                            const stock = filteredStocks[index];
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    style={style}
+                                                    className="px-4 py-2 cursor-pointer flex items-center hover:bg-[#3E4355] text-white"
+                                                    onClick={() => handleSelect(stock)}
+                                                >
+                                                    <img
+                                                        src={stock.logo}
+                                                        alt={stock.stockSymbol}
+                                                        className="w-10 h-10 rounded-full object-cover"
+                                                        onError={(e) => {
+                                                            // ถ้าโหลดโลโก้ไม่สำเร็จ ให้ใช้โลโก้ fallback ที่เก็บไว้ใน assets
+                                                            e.currentTarget.onerror = null; // ป้องกัน loop ซ้ำ
+                                                            e.currentTarget.src = `/src/assets/us_logo/${stock.stockSymbol}.png`;
+                                                        }}
+                                                    />
 
-                                        </div>
-                                    ))}
+                                                    <div className="flex-1 px-4">
+                                                        <div className="text-white text-sm font-medium">{stock.stockSymbol}</div>
+                                                        <div className="text-white text-xs">{stock.companyName}</div>
+                                                    </div>
+                                                    <div
+                                                        className={`text-sm font-medium ${stock.changePct > 0
+                                                            ? 'text-green-300'
+                                                            : stock.changePct < 0
+                                                                ? 'text-red-400'
+                                                                : 'text-gray-400'
+                                                            }`}
+                                                    >
+                                                        {stock.changePct > 0
+                                                            ? `+${stock.changePct}%`
+                                                            : `${stock.changePct}%`}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }}
+                                    </List>
                                 </div>
                             )}
                         </div>

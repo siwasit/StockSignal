@@ -317,19 +317,20 @@ function StockSignal({ onSwitchChange, stock, stockList, onFavoriteChange }) {
                                 {sortedStock.map((stock, index) => (
                                     <div key={index} className="">
                                         <StockCard
-                                            stockSymbol={stock.stockSymbol}
-                                            price={stock.stockPrice}
-                                            status={stock.status}
-                                            reason={stock.reason}
-                                            timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
-                                                day: '2-digit',
-                                                month: '2-digit',
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                hour12: true,
-                                            })}`}
-                                            isFavorite={stock.isFavorite}
+                                            // stockSymbol={stock.stockSymbol}
+                                            // price={stock.stockPrice}
+                                            // status={stock.status}
+                                            // reason={stock.reason}
+                                            // timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
+                                            //     day: '2-digit',
+                                            //     month: '2-digit',
+                                            //     year: 'numeric',
+                                            //     hour: '2-digit',
+                                            //     minute: '2-digit',
+                                            //     hour12: true,
+                                            // })}`}
+                                            // isFavorite={stock.isFavorite}
+                                            stock={stock}
                                             onToggleFavorite={() => handleToggleFavorite(stock.stockSymbol)}
                                             onClick={() => {
                                                 setSwitchState(!switchState);

@@ -242,3 +242,113 @@ function Test() {
 }
 
 export default Test;
+{/* <table className="w-full table-auto text-sm text-white bg-[#2E3343] border-separate border-spacing-y-2">
+                        <thead className="sticky top-40 z-20 bg-[#2E3343] text-white font-medium text-lg border-b border-gray-600">
+                            <tr>
+                                <th className="text-left py-2 pl-5 min-w-[180px]">
+                                    logo
+                                </th>
+                                <th className="text-left py-2 pl-5 min-w-[180px]">
+                                    symbol
+                                </th>
+                                <th className="text-left py-2 pl-5 min-w-[180px]">
+                                    ชื่อบริษัท
+                                </th>
+                                <th className="text-right min-w-[160px] pr-2">ราคา</th>
+                                <th className="text-left flex-1 px-4">คำอธิบาย Signal</th>
+                                <th className="text-right min-w-[200px] pr-5">อัปเดตล่าสุด</th>
+                                <th className="w-8 text-right pr-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredStocks.map((stock, index) => (
+                                <tr
+                                    key={index}
+                                    className="bg-[#262B3A] hover:bg-[#353A4C] cursor-pointer rounded-lg"
+                                    onClick={() => {
+                                        setSwitchState(!switchState);
+                                        setStockDetail(stock);
+                                    }}
+                                >
+                                    <td className="flex items-center gap-2 py-3 pl-5 min-w-[180px]">
+                                        {stock.logo ? (
+                                            <img src={stock.logo} alt="logo" className="w-10 h-10 rounded-full object-contain" />
+                                        ) : (
+                                            <div className="w-10 h-10"></div>
+                                        )}
+                                        <span className="font-semibold">{stock.stockSymbol}</span>
+                                    </td>
+                                    <td className="text-right min-w-[160px] pr-2">
+                                        {stock.stockPrice != null ? `${stock.stockPrice} บาท` : '- บาท'}
+                                    </td>
+                                    <td className="text-left flex-1 px-4">{stock.reason}</td>
+                                    <td className="text-right min-w-[200px] pr-5">
+                                        {new Date(stock.timeStamp).toLocaleString('en-US', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: true,
+                                        })}
+                                    </td>
+                                    <td className="text-right pr-2">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // ไม่ให้คลิก table row
+                                                handleToggleFavorite(stock.stockSymbol);
+                                            }}
+                                        >
+                                            {stock.isFavorite ? '⭐' : '☆'}
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table> */}
+
+
+{/* Header */ }
+// {/* <div
+//     className="flex items-center justify-between  py-2 bg-[#2E3343] text-white text-sm font-medium border-b border-gray-600 rounded-t
+//                         sticky top-40 z-20"
+// >
+//     <div className="flex items-center min-w-[180px] text-lg">
+//         <span className="w-10 h-10 ml-5"></span> {/* ช่องว่างไว้แทน logo */}
+//         หุ้น / Signal
+//     </div>
+//     <div className="min-w-[160px] text-end pr-2 text-lg">ราคา</div>
+//     <div className="flex-1 px-4 text-lg">คำอธิบาย Signal</div>
+//     <div className="min-w-[200px] text-lg text-end mr-5">อัปเดตล่าสุด</div>
+//     <div className="w-8 text-end"></div>
+// </div>
+
+
+// {/* Stocks List */ }
+// <div className="grid  grid-cols-1 gap-4 my-2">
+//     {filteredStocks.map((stock, index) => (
+//         <div key={index}>
+//             <StockBullet
+//                 stockSymbol={stock.stockSymbol}
+//                 price={stock.stockPrice}
+//                 status={stock.status}
+//                 reason={stock.reason}
+//                 timeStamp={`อัปเดตล่าสุด: ${new Date(stock.timeStamp).toLocaleString('en-US', {
+//                     day: '2-digit',
+//                     month: '2-digit',
+//                     year: 'numeric',
+//                     hour: '2-digit',
+//                     minute: '2-digit',
+//                     hour12: true,
+//                 })}`}
+//                 isFavorite={stock.isFavorite}
+//                 onToggleFavorite={() => handleToggleFavorite(stock.stockSymbol)}
+//                 onClick={() => {
+//                     setSwitchState(!switchState);
+//                     setStockDetail(stock);
+//                 }}
+//                 logo={stock.logo}
+//             />
+//         </div>
+//     ))}
+// </div> */}
