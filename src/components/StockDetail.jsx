@@ -6,6 +6,7 @@ import { calculateEMA, calculateRSI, calculateMACD, calculateVolume, calculateOB
 import { ExternalLink, ChevronRight, LineChart } from 'lucide-react';
 import NewsCard from './NewsCard';
 import { motion } from 'framer-motion';
+import Databox from './Databox';
 
 function ChartLegend({ showEMA }) {
     if (!(showEMA)) {
@@ -168,29 +169,12 @@ function StockDetail({ stock }) {
     const [companyData, setCompanyData] = useState(null);
     const [widthState, setWidth] = useState();
     const [isLoading, setIsLoading] = useState(false);
+    const [isNewsLoading, setIsNewsLoading] = useState(false);
+    const [stockNews, setStockNews] = useState([]);
 
     useEffect(() => {
         if (didFetch.current) return;
         didFetch.current = true;
-
-        // async function loadCompanyData() {
-        //     setIsLoading(true);
-        //     setCompanyData(null); // เคลียร์ค่าก่อน
-
-        //     try {
-        //         const response = await fetch(`http://127.0.0.1:3007/CompanyData/${encodeURIComponent(stock.stockSymbol)}`);
-        //         if (!response.ok) throw new Error('Failed to fetch company data');
-
-        //         const data = await response.json();
-        //         setCompanyData(data);
-
-        //         console.log('โหลดข้อมูลสำเร็จ', data);
-        //     } catch (error) {
-        //         console.error('เกิดข้อผิดพลาดระหว่างโหลดข้อมูล:', error);
-        //     } finally {
-        //         setIsLoading(false);
-        //     }
-        // }
         async function loadCompanyData() {
             setIsLoading(true);
             setCompanyData(null); // เคลียร์ค่าก่อน
@@ -200,7 +184,7 @@ function StockDetail({ stock }) {
                 if (!response.ok) throw new Error('Failed to fetch company data');
 
                 const data = await response.json();
-                console.log(data)
+                // console.log(data)
                 setCompanyData(data);
 
                 // console.log('โหลดข้อมูลสำเร็จ', data);
@@ -208,6 +192,28 @@ function StockDetail({ stock }) {
                 console.error('เกิดข้อผิดพลาดระหว่างโหลดข้อมูล:', error);
             } finally {
                 setIsLoading(false);
+            }
+        }
+
+        async function loadStockNews() {
+            setIsNewsLoading(true);
+            setStockNews([]); // เคลียร์ค่าก่อน
+
+            try {
+                const response = await fetch(`http://127.0.0.1:3007/news/${encodeURIComponent(stock.stockSymbol)},${encodeURIComponent(stock.stockMarket)},${encodeURIComponent(stock.companyName)}`);
+                if (!response.ok) throw new Error('Failed to fetch company data');
+
+                const data = await response.json();
+                const sortedData = data.sort((a, b) => {
+                    return new Date(b.published).getTime() - new Date(a.published).getTime();
+                });
+                setStockNews(sortedData);
+
+                // console.log('โหลดข้อมูลสำเร็จ', data);
+            } catch (error) {
+                console.error('เกิดข้อผิดพลาดระหว่างโหลดข้อมูล:', error);
+            } finally {
+                setIsNewsLoading(false);
             }
         }
 
@@ -261,6 +267,7 @@ function StockDetail({ stock }) {
         }
 
         fetchData();
+        loadStockNews();
         loadCompanyData();
     }, []);  // dependency array ว่าง ทำให้รันแค่ครั้งเดียว
 
@@ -634,21 +641,6 @@ function StockDetail({ stock }) {
         };
     }, [scaleActive, sampleData, indicators]);
 
-    const formatEstablishedDate = (dateStr) => {
-        if (!dateStr) return "-";
-
-        const [day, month, year] = dateStr.split("/");
-
-        const dateObj = new Date(`${year}-${month}-${day}`);  // yyyy-mm-dd
-
-        return dateObj.toLocaleDateString('th-TH', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-            calendar: 'gregory',    // ใช้ปฏิทินสากล (ค.ศ.)
-        });
-    };
-
     return (
         <motion.div
             className="flex flex-col"
@@ -701,7 +693,7 @@ function StockDetail({ stock }) {
                 </div>
 
                 <div className='flex w-full h-full mb-4'>
-                    <div className='flex flex-col w-[75%] h-full pr-4 border-r-2 border-[#868686]'>
+                    <div className='flex flex-col w-[75%] h-full pr-4'>
                         <div className="flex-col space-y-2 my-3 text-gray-100">
                             <div className="flex space-x-4 items-center font-semibold text-xl">
                                 <div>{priceNow.toFixed(2)} {stockDetail.currency}</div>
@@ -813,112 +805,93 @@ function StockDetail({ stock }) {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-white">
 
                                     {/* มูลค่าตามราคาตลาด */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium border-b pb-1 border-gray-500">มูลค่าตามราคาตลาด</div>
-                                        <div className="text-md">
-                                            {companyData?.["Market capitalization"]?.value !== undefined
-                                                ? `${companyData["Market capitalization"].value.toFixed(2)}${companyData["Market capitalization"].prefix ? '' + companyData["Market capitalization"].prefix : ''}${companyData["Market capitalization"].currency ? ' ' + stock.currency : ''}`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="มูลค่าตามราคาตลาด"
+                                        value={
+                                            companyData?.["Market capitalization"]?.value !== undefined
+                                                ? `${companyData["Market capitalization"].value.toFixed(2)}${companyData["Market capitalization"].prefix ?? ''}${companyData["Market capitalization"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* อัตราผลตอบแทนจากเงินปันผล */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อัตราผลตอบแทนจากเงินปันผล</div>
-                                        <div className="text-md">
-                                            {companyData?.["Dividend yield (indicated)"]?.value !== undefined
+                                    <Databox
+                                        label="อัตราผลตอบแทนจากเงินปันผล"
+                                        value={
+                                            companyData?.["Dividend yield (indicated)"]?.value !== undefined
                                                 ? `${companyData["Dividend yield (indicated)"].value.toFixed(2)} %`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* อัตราส่วนราคาต่อกำไรสุทธิ */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อัตราส่วนราคาต่อกำไรสุทธิ</div>
-                                        <div className="text-md">
-                                            {companyData?.["Price to earnings Ratio (TTM)"]?.value !== undefined
+                                    <Databox
+                                        label="อัตราส่วนราคาต่อกำไรสุทธิ"
+                                        value={
+                                            companyData?.["Price to earnings Ratio (TTM)"]?.value !== undefined
                                                 ? companyData["Price to earnings Ratio (TTM)"].value.toFixed(2)
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* กำไรพื้นฐานต่อหุ้น (Basic EPS) */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กำไรพื้นฐานต่อหุ้น (Basic EPS)</div>
-                                        <div className="text-md">
-                                            {companyData?.["Basic EPS (TTM)"]?.value !== undefined
+                                    <Databox
+                                        label="กำไรพื้นฐานต่อหุ้น (Basic EPS)"
+                                        value={
+                                            companyData?.["Basic EPS (TTM)"]?.value !== undefined
                                                 ? `${companyData["Basic EPS (TTM)"].value.toFixed(2)}${companyData["Basic EPS (TTM)"].currency ? ' ' + stock.currency : ''}`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* กำไรสุทธิ (Net income FY) */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กำไรสุทธิ (ปีล่าสุด)</div>
-                                        <div className="text-md">
-                                            {companyData?.["Net income (FY)"]?.value !== undefined
-                                                ? `${companyData["Net income (FY)"].value.toFixed(2)}${companyData["Net income (FY)"].prefix ? '' + companyData["Net income (FY)"].prefix : ''}${companyData["Net income (FY)"].currency ? ' ' + stock.currency : ''}`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="กำไรสุทธิ (ปีล่าสุด)"
+                                        value={
+                                            companyData?.["Net income (FY)"]?.value !== undefined
+                                                ? `${companyData["Net income (FY)"].value.toFixed(2)}${companyData["Net income (FY)"].prefix ?? ''}${companyData["Net income (FY)"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* รายได้ (Revenue FY) */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">รายได้ (ปีล่าสุด)</div>
-                                        <div className="text-md">
-                                            {companyData?.["Revenue (FY)"]?.value !== undefined
-                                                ? `${companyData["Revenue (FY)"].value.toFixed(2)}${companyData["Revenue (FY)"].prefix ? '' + companyData["Revenue (FY)"].prefix : ''}${companyData["Revenue (FY)"].currency ? ' ' + stock.currency : ''}`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="รายได้ (ปีล่าสุด)"
+                                        value={
+                                            companyData?.["Revenue (FY)"]?.value !== undefined
+                                                ? `${companyData["Revenue (FY)"].value.toFixed(2)}${companyData["Revenue (FY)"].prefix ?? ''}${companyData["Revenue (FY)"].currency ? ' ' + stock.currency : ''}`
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* จำนวนหุ้นลอยตัว (Shares float) */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">จำนวนหุ้นลอยตัว</div>
-                                        <div className="text-md">
-                                            {companyData?.["Shares float"]?.value !== undefined
-                                                ? `${companyData["Shares float"].value.toFixed(2)}${companyData["Shares float"].prefix ? '' + companyData["Shares float"].prefix : ''} ตัว`
-                                                : "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="จำนวนหุ้นลอยตัว"
+                                        value={
+                                            companyData?.["Shares float"]?.value !== undefined
+                                                ? `${companyData["Shares float"].value.toFixed(2)}${companyData["Shares float"].prefix ?? ''} ตัว`
+                                                : "-"
+                                        }
+                                    />
 
-                                    {/* Sector */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">กลุ่มธุรกิจ (Sector)</div>
-                                        <div className="text-md font-thin">
-                                            {companyData?.Sector || "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="กลุ่มธุรกิจ (Sector)"
+                                        value={companyData?.Sector ?? '-'}
+                                    />
 
-                                    {/* ผู้บริหาร */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">ประธานเจ้าหน้าที่บริหาร</div>
-                                        <div className="text-md font-thin">
-                                            {companyData?.CEO || "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="ประธานเจ้าหน้าที่บริหาร"
+                                        value={companyData?.CEO ?? '-'}
+                                    />
 
-                                    {/* Industry */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">อุตสาหกรรม (Industry)</div>
-                                        <div className="text-md font-thin">
-                                            {companyData?.Industry || "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="อุตสาหกรรม (Industry)"
+                                        value={companyData?.Industry ?? '-'}
+                                    />
 
-                                    {/* ก่อตั้ง */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">ก่อตั้ง</div>
-                                        <div className="text-md font-thin">
-                                            {companyData?.Founded || "-"}
-                                        </div>
-                                    </div>
+                                    <Databox
+                                        label="ก่อตั้ง"
+                                        value={companyData?.Founded ?? '-'}
+                                    />
 
-                                    {/* เว็บไซต์ */}
-                                    <div className="flex bg-[#2E3343] rounded-lg flex-col gap-2 px-4 py-2">
-                                        <div className="text-lg font-medium pb-1 border-b border-gray-500">เว็บไซต์</div>
-                                        <div>
-                                            {companyData?.Website ? (
+                                    <Databox
+                                        label="เว็บไซต์"
+                                        value={
+                                            companyData?.Website ? (
                                                 <a
                                                     href={`https://${companyData.Website}`}
                                                     target="_blank"
@@ -929,16 +902,16 @@ function StockDetail({ stock }) {
                                                     <ExternalLink className="w-4 h-4 text-white opacity-60 group-hover:text-[#6870FA] transition-colors duration-200" />
                                                 </a>
                                             ) : (
-                                                <div className="text-md font-thin text-white">-</div>
-                                            )}
-                                        </div>
-                                    </div>
+                                                "-"
+                                            )
+                                        }
+                                    />
 
                                 </div>
                             )}
                         </div>
                     </div>
-                    <div className='pl-4 w-[25%] flex flex-col'>
+                    <div className='pl-4 w-[25%] flex flex-col border-l-2 border-[#868686]'>
                         <div className='text-2xl text-white font-bold my-4'>สัญญาณล่าสุด</div>
                         <div className='w-full flex items-center justify-between rounded-lg py-2 px-4 bg-[#41DC8E] flex'>
                             <div className='text-white font-bold text-xl'>BUY</div>
@@ -987,23 +960,41 @@ function StockDetail({ stock }) {
 
 
                         <div className='text-2xl text-white font-semibold my-2'>ข่าว {stock.stockSymbol} ล่าสุด</div>
-                        <div className='flex flex-col w-full space-y-2'>
-                            <NewsCard
-                                timestamp="7 วันที่ผ่านมา"
-                                source="สำนักข่าวอินโฟเควสท์"
-                                title="GULF และ PTT Tank เซ็นสัญญา EPCC ร่วมกับ POSCO E&C และ CAZ พัฒนาท่าเรือก๊าซมาบตาพุด"
-                            />
-                            <NewsCard
-                                timestamp="7 วันที่ผ่านมา"
-                                source="สำนักข่าวอินโฟเควสท์"
-                                title="GULF และ PTT Tank เซ็นสัญญา EPCC ร่วมกับ POSCO E&C และ CAZ พัฒนาท่าเรือก๊าซมาบตาพุด"
-                            />
-                            <NewsCard
-                                timestamp="7 วันที่ผ่านมา"
-                                source="สำนักข่าวอินโฟเควสท์"
-                                title="GULF และ PTT Tank เซ็นสัญญา EPCC ร่วมกับ POSCO E&C และ CAZ พัฒนาท่าเรือก๊าซมาบตาพุด"
-                            />
-                        </div>
+                        {isNewsLoading ? (
+                            <div className=" my-4 flex flex-col items-center justify-center text-gray-100">
+                                <img
+                                    src="/icons/OliveSpinner.svg"
+                                    alt="Loading..."
+                                    className="w-15 h-15 animate-spin mb-2"
+                                />
+                                <div className="text-lg font-semibold text-gray-300">
+                                    กำลังโหลดข่าวล่าสุดของ&nbsp;{stock.stockSymbol}
+                                </div>
+                                {/* <div className="mt-1 text-xl font-bold text-green-400">
+                                    Loaded: {AllStock.length} / {SET50.length}
+                                </div> */}
+                            </div>
+                        ) : (
+                            <div className='flex flex-col w-full space-y-2'>
+                                {stockNews.map((news, index) => (
+                                    <NewsCard
+                                        key={index}
+                                        timestamp={new Date(news.published).toLocaleDateString('th-TH', {
+                                            day: 'numeric',
+                                            month: 'short',
+                                            year: 'numeric',
+                                        })}
+                                        source={news.source}
+                                        title={news.title}
+                                        link={news.link}
+                                        favicon={news.favicons?.[0]} // ถ้ามี
+                                    />
+                                ))}
+                            </div>
+
+                        )
+                        }
+
                     </div>
                 </div>
             </div>

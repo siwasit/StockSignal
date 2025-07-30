@@ -188,8 +188,8 @@ function Dashboard() {
     // const BATCH_SIZE = 5;
 
     const favoriteSymbols = [
-        "PTT", "CPALL", "TPLAS", "SCB", "BBL",
-        "AOT", "TRUE", "ADVANC", "KBANK"
+        "SET:PTT", "SET:CPALL", "SET:TPLAS", "SET:SCB", "SET:BBL",
+        "SET:AOT", "SET:TRUE", "SET:ADVANC", "SET:KBANK"
     ];
     const didFetch = useRef(false);
 
@@ -368,7 +368,7 @@ function Dashboard() {
                     status: ['Buy', 'Sell', 'Hold'][Math.floor(Math.random() * 3)],
                     reason: 'Not started yet',
                     timeStamp: getRandomDate(new Date(2025, 6, 1), new Date(2025, 6, 13, 23, 59)).toISOString(),
-                    isFavorite: favoriteSymbols.includes(stock?.stockSymbol?.toUpperCase()),
+                    isFavorite: favoriteSymbols.includes(`${stock.stockMarket}:${stock.stockSymbol?.toUpperCase()}`),
                     currency: currencySymbols[exchangeCurrencies[stock.stockMarket]],
                     fullCurrency: exchangeCurrencies[stock.stockMarket]
                 };
@@ -434,9 +434,14 @@ function Dashboard() {
 
     }, []);
 
-    const filteredStocks = AllStockData.filter((stock) =>
-        stock.stockSymbol.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredStocks = AllStockData.filter((stock) => {
+        const search = searchTerm.toLowerCase();
+        return (
+            stock.stockSymbol?.toLowerCase().includes(search) ||
+            stock.companyName.toLowerCase().includes(search)
+        );
+    });
+
 
     const handleFavoriteChange = (updatedFavorites) => {
         setFavoriteStocks(updatedFavorites);
@@ -598,7 +603,7 @@ function Dashboard() {
                                                     className="w-6 h-6 rounded-full object-cover"
                                                 />
                                             </div>
-                                            <span className="text-lg text-white">{stock.stockSymbol}</span>
+                                            <span className="text-md flex text-white gap-1"><div className='text-gray-500'>{stock.stockMarket}:</div>{stock.stockSymbol}</span>
                                         </div>
                                         <div
                                             className={`${stock.status === 'Buy'

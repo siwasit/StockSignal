@@ -82,6 +82,18 @@ import 'animate.css';
 
 function StockCard({ stock, onToggleFavorite, onClick }) {
 
+    const regionMarket = {
+        1: ["SET"],
+        2: ["CBOE", "NASDAQ", "NYSE", "AMEX"],
+        3: ["SSE", "SZSE"],
+    };
+
+    const stockRegion = [
+        { id: 1, name: 'Thailand', flag: 'https://s3-symbol-logo.tradingview.com/country/TH.svg' },
+        { id: 2, name: 'USA', flag: 'https://s3-symbol-logo.tradingview.com/country/US.svg' },
+        { id: 3, name: 'Mainland China', flag: 'https://s3-symbol-logo.tradingview.com/country/CN.svg' },
+    ];
+
     const {
         logo,
         stockSymbol,
@@ -91,7 +103,8 @@ function StockCard({ stock, onToggleFavorite, onClick }) {
         isFavorite,
         stockPrice,
         changePct,
-        currency
+        currency,
+        stockMarket
     } = stock;
 
     const statusColor = {
@@ -107,14 +120,42 @@ function StockCard({ stock, onToggleFavorite, onClick }) {
         return null;
     }
 
+    function getFlagByMarket(market) {
+        const regionId = Object.entries(regionMarket).find(([_, markets]) =>
+            markets.includes(market)
+        )?.[0];
+
+        return stockRegion.find(r => r.id === parseInt(regionId))?.flag || '';
+    }
+
+    const flagUrl = getFlagByMarket(stockMarket);
+
     return (
         <div
             onClick={onClick}
-            className="bg-[#3E4355] hover:bg-[#5D6275] rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border border-[#6B7280]"
+            className="rounded-xl p-6 text-white shadow-md flex flex-col h-full gap-2 border border-[#6B7280] cursor-pointer bg-[#3E4355] hover:bg-[#5D6275] overflow-hidden"
         >
+
             <div className="flex-grow flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                    <div className="text-2xl font-bold text-white">{stockSymbol}</div>
+                    <div className='flex space-x-4 items-center'>
+                        <img
+                            src={stock.logo}
+                            alt={stock.stockSymbol}
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                                // ถ้าโหลดโลโก้ไม่สำเร็จ ให้ใช้โลโก้ fallback ที่เก็บไว้ใน assets
+                                e.currentTarget.onerror = null; // ป้องกัน loop ซ้ำ
+                                e.currentTarget.src = `/src/assets/us_logo/${stock.stockSymbol}.png`;
+                            }}
+                        />
+                        <div className="text-2xl flex gap-1 font-bold text-white">
+                            <div className="text-[#9CA3AF]">{stock.stockMarket}:</div>
+                            {stockSymbol}
+                        </div>
+
+                    </div>
+
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
