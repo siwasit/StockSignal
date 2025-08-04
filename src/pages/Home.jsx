@@ -101,14 +101,20 @@ function Home() {
 
           <div className='w-70 flex space-x-4 items-center'>
             <div
-              onClick={() => setIsLoginOpen(true)}
+              onClick={() => {
+                navigate('/Login')
+                window.scrollTo(0, 0);
+              }}
               className='cursor-pointer text-[#007A4D] relative after:block after:bg-[#007A4D] after:h-[2px] px-4 py-2 after:w-0 after:transition-all after:duration-300 hover:after:w-full'
             >
               เข้าสู่ระบบ
             </div>
 
             <div
-              onClick={() => setIsRegisterOpen(true)}
+              onClick={() => {
+                navigate('/Register')
+                window.scrollTo(0, 0);
+              }}
               className='text-white bg-[#007A4D] rounded-xl cursor-pointer transition text-lg font-medium px-4 py-2 hover:bg-[#00a67a]'
             >
               สมัครใช้งานฟรี
@@ -141,7 +147,10 @@ function Home() {
               </div>
 
               <div className='mt-8 bg-[#007A4D] py-4 px-6 cursor-pointer hover:bg-[#00a67a] transition self-center rounded-full flex items-center space-x-2'>
-                <div className='text-white text-3xl font-semibold mb-1' onClick={() => setIsRegisterOpen(true)}>เริ่มเลย</div>
+                <div className='text-white text-3xl font-semibold mb-1' onClick={() => {
+                  navigate('/Register')
+                  window.scrollTo(0, 0);
+                }}>เริ่มเลย</div>
                 <ArrowRight className="w-9 h-9 text-white" />
               </div>
 
@@ -259,7 +268,10 @@ function Home() {
             <div className='w-[75%] mx-auto flex flex-col py-20'>
               <div className='text-white font-bold text-4xl'>ปลดล็อกโอกาสการลงทุน ด้วยข้อมูลที่ใช่</div>
               <div className='flex-1 text-white font-medium text-xl mt-2'>รับสัญญาณซื้อขายทันที วิเคราะห์ง่าย ใช้งานสะดวก</div>
-              <div onClick={() => setIsRegisterOpen(true)} className='text-center text-white bg-[#007A4D] max-w-40 rounded-xl cursor-pointer transition text-lg font-medium px-4 py-2 hover:bg-[#00a67a]'>
+              <div onClick={() => {
+                navigate('/Register')
+                window.scrollTo(0, 0);
+              }} className='text-center text-white bg-[#007A4D] max-w-40 rounded-xl cursor-pointer transition text-lg font-medium px-4 py-2 hover:bg-[#00a67a]'>
                 สมัครใช้งานฟรี
               </div>
             </div>

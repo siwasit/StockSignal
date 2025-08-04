@@ -3,7 +3,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline';
 import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 import { calculateEMA, calculateRSI, calculateMACD, calculateVolume, calculateOBV } from './../assets/indicators'; // ด้านล่างจะเขียนให้
-import { ExternalLink, ChevronRight, LineChart } from 'lucide-react';
+import { ExternalLink, ChevronRight, LineChart, Inbox } from 'lucide-react';
 import NewsCard from './NewsCard';
 import { motion } from 'framer-motion';
 import Databox from './Databox';
@@ -200,7 +200,7 @@ function StockDetail({ stock }) {
             setStockNews([]); // เคลียร์ค่าก่อน
 
             try {
-                const response = await fetch(`http://127.0.0.1:3007/news/${encodeURIComponent(stock.stockSymbol)},${encodeURIComponent(stock.stockMarket)},${encodeURIComponent(stock.companyName)}`);
+                const response = await fetch(`http://127.0.0.1:3007/news/${encodeURIComponent(stock.stockSymbol)}/${encodeURIComponent(stock.stockMarket)}/${encodeURIComponent(stock.ThaiCompanyName)}/${encodeURIComponent(stock.companyName)}`);
                 if (!response.ok) throw new Error('Failed to fetch company data');
 
                 const data = await response.json();
@@ -961,7 +961,7 @@ function StockDetail({ stock }) {
 
                         <div className='text-2xl text-white font-semibold my-2'>ข่าว {stock.stockSymbol} ล่าสุด</div>
                         {isNewsLoading ? (
-                            <div className=" my-4 flex flex-col items-center justify-center text-gray-100">
+                            <div className="my-4 flex flex-col items-center justify-center text-gray-100">
                                 <img
                                     src="/icons/OliveSpinner.svg"
                                     alt="Loading..."
@@ -974,8 +974,13 @@ function StockDetail({ stock }) {
                                     Loaded: {AllStock.length} / {SET50.length}
                                 </div> */}
                             </div>
+                        ) : stockNews.length === 0 ? (
+                            <div className="my-4 flex flex-col items-center justify-center text-gray-400">
+                                <Inbox className="w-14 h-14 mb-2 opacity-70" />
+                                <div className="text-lg font-medium">ไม่พบข้อมูลข่าวล่าสุด</div>
+                            </div>
                         ) : (
-                            <div className='flex flex-col w-full space-y-2'>
+                            <div className="flex flex-col w-full space-y-2">
                                 {stockNews.map((news, index) => (
                                     <NewsCard
                                         key={index}
@@ -991,10 +996,7 @@ function StockDetail({ stock }) {
                                     />
                                 ))}
                             </div>
-
-                        )
-                        }
-
+                        )}
                     </div>
                 </div>
             </div>

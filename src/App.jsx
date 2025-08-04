@@ -6,6 +6,8 @@ import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
 import About from './pages/About'
 import Test from './pages/Test'
+import Login from './pages/Login'
+import Register from './pages/Register'
 // import './App.css'
 
 function App() {
@@ -14,6 +16,8 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/Dashboard" element={<Dashboard />} />
       <Route path="/About-us" element={<About />} />
+      <Route path="/Login" element={<Login />} />
+      <Route path="/Register" element={<Register />} />
       <Route path="/test" element={<Test />} />
     </Routes>
   )

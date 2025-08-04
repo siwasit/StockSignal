@@ -15,7 +15,7 @@ function About() {
     const [loginErrors, setLoginErrors] = useState({});
     const [registerErrors, setRegisterErrors] = useState({});
     const [isMounted, setIsMounted] = useState(false);
-    
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -61,7 +61,7 @@ function About() {
     };
 
     return (
-        <div className='flex flex-col min-h-screen bg-[#F5F5F5] w-full'>
+        <div className='flex flex-col min-h-screen bg-[#F5F5F5] max-w-[99vw]'>
             <nav className='flex items-center bg-[#F5F5F5] px-8 py-2 sticky top-0 z-50 shadow w-full'>
                 <span className='w-70'>
                     <img src="/images/logoBlack.png" alt="Logo" className="h-20" />
@@ -69,47 +69,53 @@ function About() {
 
                 <div className='flex-1 space-x-8 font-semibold text-lg flex justify-center'>
                     <div
-                    onClick={() => {
-                        navigate('/')
-                        window.scrollTo(0, 0);
-                    }}
-                    className={`cursor-pointer relative after:block after:bg-black after:h-[2px] after:w-0 after:transition-all after:duration-300 hover:after:w-full
+                        onClick={() => {
+                            navigate('/')
+                            window.scrollTo(0, 0);
+                        }}
+                        className={`cursor-pointer relative after:block after:bg-black after:h-[2px] after:w-0 after:transition-all after:duration-300 hover:after:w-full
                     `}
                     >
-                    หน้าหลัก
+                        หน้าหลัก
                     </div>
-                    <div 
+                    <div
                         onClick={() => {
-                        navigate('/Dashboard')
-                        window.scrollTo(0, 0);
-                        }} 
+                            navigate('/Dashboard')
+                            window.scrollTo(0, 0);
+                        }}
                         className={`cursor-pointer relative after:block after:bg-black after:h-[2px] after:w-0 after:transition-all after:duration-300 hover:after:w-full
                         `}
                     >
-                    Dashboard
+                        Dashboard
                     </div>
-                    <div 
+                    <div
                         onClick={() => {
-                        navigate('/About-us')
-                        window.scrollTo(0, 0);
-                        }} 
+                            navigate('/About-us')
+                            window.scrollTo(0, 0);
+                        }}
                         className={`cursor-pointer relative after:block after:bg-black after:h-[2px] after:w-0 after:transition-all after:duration-300 hover:after:w-full
                         ${isActive ? 'after:w-full ' : 'text-[#00000090]'}`}
                     >
-                    เกี่ยวกับเรา
+                        เกี่ยวกับเรา
                     </div>
                 </div>
 
                 <div className='w-70 flex space-x-4 items-center'>
                     <div
-                        onClick={() => setIsLoginOpen(true)}
+                        onClick={() => {
+                            navigate('/Login')
+                            window.scrollTo(0, 0);
+                        }}
                         className='cursor-pointer text-[#007A4D] relative after:block after:bg-[#007A4D] after:h-[2px] px-4 py-2 after:w-0 after:transition-all after:duration-300 hover:after:w-full'
                     >
                         เข้าสู่ระบบ
                     </div>
 
                     <div
-                        onClick={() => setIsRegisterOpen(true)}
+                        onClick={() => {
+                            navigate('/Register')
+                            window.scrollTo(0, 0);
+                        }}
                         className='text-white bg-[#007A4D] rounded-xl cursor-pointer transition text-lg font-medium px-4 py-2 hover:bg-[#00a67a]'
                     >
                         สมัครใช้งานฟรี
